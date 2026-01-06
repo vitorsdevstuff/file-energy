@@ -210,7 +210,7 @@ export async function DELETE(
     // Delete OpenAI resources
     if (chat.assistantId) {
       try {
-        await openai.beta.assistants.del(chat.assistantId);
+        await openai.beta.assistants.delete(chat.assistantId);
       } catch {
         // Ignore if already deleted
       }
@@ -218,7 +218,7 @@ export async function DELETE(
 
     if (chat.threadId) {
       try {
-        await openai.beta.threads.del(chat.threadId);
+        await openai.beta.threads.delete(chat.threadId);
       } catch {
         // Ignore if already deleted
       }

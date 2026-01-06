@@ -86,8 +86,9 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ user });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const issues = error.issues;
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: issues[0]?.message || "Validation error" },
         { status: 400 }
       );
     }

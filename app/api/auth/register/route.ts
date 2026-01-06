@@ -53,8 +53,9 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const issues = error.issues;
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: issues[0]?.message || "Validation error" },
         { status: 400 }
       );
     }

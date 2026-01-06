@@ -2,18 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Zap, FileText, BarChart3 } from "lucide-react";
+import { ArrowRight, Zap, FileText, BarChart3, type LucideIcon } from "lucide-react";
 import { ThreeBackground } from "@/components/three/ThreeBackground";
 
-const fadeUpAnimation = {
+const fadeUpAnimation: Variants = {
   initial: { opacity: 0, y: 30 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, ease: "easeOut" },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } },
 };
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   animate: {
     transition: {
       staggerChildren: 0.1,
@@ -21,19 +20,19 @@ const staggerContainer = {
   },
 };
 
-const floatingAnimation = {
+const floatingAnimation: Variants = {
   initial: { y: 0 },
   animate: {
     y: [-8, 8, -8],
     transition: {
       duration: 6,
       repeat: Infinity,
-      ease: "easeInOut",
+      ease: "easeInOut" as const,
     },
   },
 };
 
-const pulseGlow = {
+const pulseGlow: Variants = {
   initial: { scale: 1, opacity: 0.5 },
   animate: {
     scale: [1, 1.2, 1],
@@ -41,7 +40,7 @@ const pulseGlow = {
     transition: {
       duration: 3,
       repeat: Infinity,
-      ease: "easeInOut",
+      ease: "easeInOut" as const,
     },
   },
 };
@@ -52,7 +51,7 @@ function FloatingBadge({
   className,
   delay = 0,
 }: {
-  icon: React.ElementType;
+  icon: LucideIcon;
   label: string;
   className: string;
   delay?: number;

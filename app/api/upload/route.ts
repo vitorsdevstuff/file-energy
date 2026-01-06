@@ -67,18 +67,18 @@ export async function POST(req: NextRequest) {
     });
 
     // Create vector store for the file
-    const vectorStore = await openai.beta.vectorStores.create({
+    const vectorStore = await openai.vectorStores.create({
       name: `File: ${file.name}`,
       file_ids: [openaiFile.id],
     });
 
     // Wait for vector store to be ready
-    let vectorStoreStatus = await openai.beta.vectorStores.retrieve(
+    let vectorStoreStatus = await openai.vectorStores.retrieve(
       vectorStore.id
     );
     while (vectorStoreStatus.status === "in_progress") {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      vectorStoreStatus = await openai.beta.vectorStores.retrieve(
+      vectorStoreStatus = await openai.vectorStores.retrieve(
         vectorStore.id
       );
     }
