@@ -4,13 +4,21 @@ const globalForOpenAI = globalThis as unknown as {
   openai: OpenAI | undefined;
 };
 
-export const openai =
-  globalForOpenAI.openai ??
-  new OpenAI({
+function createOpenAIClient() {
+  return new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
+}
 
-if (process.env.NODE_ENV !== "production") globalForOpenAI.openai = openai;
+// Lazy initialization using Proxy to defer client creation until first use
+export const openai = new Proxy({} as OpenAI, {
+  get(_target, prop) {
+    if (!globalForOpenAI.openai) {
+      globalForOpenAI.openai = createOpenAIClient();
+    }
+    return (globalForOpenAI.openai as unknown as Record<string, unknown>)[prop as string];
+  },
+});
 
 export default openai;
 
