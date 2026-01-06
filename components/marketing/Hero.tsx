@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap, FileText, BarChart3, type LucideIcon } from "lucide-react";
-import { ThreeBackground } from "@/components/three/ThreeBackground";
 
 const fadeUpAnimation: Variants = {
   initial: { opacity: 0, y: 30 },
@@ -72,9 +71,6 @@ function FloatingBadge({
 export function Hero() {
   return (
     <section className="relative overflow-hidden pb-20 pt-32 lg:pb-32 lg:pt-40">
-      {/* Three.js Background */}
-      <ThreeBackground />
-
       {/* Gradient overlays */}
       <div className="absolute inset-0 -z-10">
         <motion.div
@@ -173,36 +169,6 @@ export function Hero() {
                   </Button>
                 </motion.div>
               </Link>
-            </motion.div>
-
-            {/* Social proof */}
-            <motion.div
-              className="mt-10 flex flex-col items-center gap-4 sm:flex-row lg:items-start"
-              variants={fadeUpAnimation}
-            >
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="h-10 w-10 rounded-full border-2 border-white bg-gradient-to-br from-gray-200 to-gray-300 dark:border-gray-800"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 + i * 0.1 }}
-                    whileHover={{ scale: 1.2, zIndex: 10 }}
-                  />
-                ))}
-              </div>
-              <motion.div
-                className="text-sm text-gray-600 dark:text-gray-400"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.3 }}
-              >
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  1,000+
-                </span>{" "}
-                professionals trust File.energy
-              </motion.div>
             </motion.div>
           </motion.div>
 
