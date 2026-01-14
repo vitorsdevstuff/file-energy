@@ -196,7 +196,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 ))}
               </ul>
 
-              <Link href="/register">
+              <Link href={`/checkout?plan=${plan.id}&currency=${currency}`}>
                 <Button
                   variant={plan.popular ? "default" : "outline"}
                   className="w-full"
@@ -208,8 +208,28 @@ export function Pricing({ showHeader = true }: PricingProps) {
           ))}
         </motion.div>
 
+        {/* Pricing Information Block */}
+        <motion.div
+          className="mx-auto mt-12 max-w-2xl rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800/50"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+        >
+          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+            Pricing Information
+          </h4>
+          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            All prices shown are final and include applicable VAT or sales tax, calculated based on your location.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            Each plan is a one-time purchase.<br />
+            No subscriptions or recurring charges apply.
+          </p>
+        </motion.div>
+
         {/* Payment Methods */}
-        <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <span className="text-sm text-gray-500 dark:text-gray-400">
             Safe & secure payment
           </span>
