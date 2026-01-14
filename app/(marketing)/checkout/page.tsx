@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { motion } from "framer-motion";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,19 @@ const currencyInfo: Record<SupportedCurrency, { symbol: string; rate: number }> 
   OMR: { symbol: "﷼", rate: 0.38 },
 };
 
-export default function CheckoutPage() {
+function CheckoutLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center pt-20">
+      <div className="text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading checkout...</p>
+      </div>
+    </div>
+  );
+}
+
+function CheckoutContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const planId = searchParams.get("plan");
   const currencyParam = searchParams.get("currency") as SupportedCurrency | null;
@@ -315,5 +325,13 @@ export default function CheckoutPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutLoading />}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
