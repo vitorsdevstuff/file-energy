@@ -4,35 +4,35 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { pricingData } from "@/lib/data";
+import { pricingData, teamPricingData, teamUserMultipliers, customPricingRates, currencyConversionRates } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES, type SupportedCurrency } from "@/lib/g2pay";
 
-// Currency symbols and conversion rates (approximate)
-const currencyInfo: Record<SupportedCurrency, { symbol: string; rate: number }> = {
-  EUR: { symbol: "€", rate: 0.92 },
-  USD: { symbol: "$", rate: 1 },
-  AUD: { symbol: "A$", rate: 1.53 },
-  CAD: { symbol: "C$", rate: 1.36 },
-  JPY: { symbol: "¥", rate: 149 },
-  SEK: { symbol: "kr", rate: 10.5 },
-  PLN: { symbol: "zł", rate: 4.0 },
-  BGN: { symbol: "лв", rate: 1.8 },
-  DKK: { symbol: "kr", rate: 6.9 },
-  CZK: { symbol: "Kč", rate: 23 },
-  HUF: { symbol: "Ft", rate: 360 },
-  NZD: { symbol: "NZ$", rate: 1.65 },
-  NOK: { symbol: "kr", rate: 10.7 },
-  GBP: { symbol: "£", rate: 0.79 },
-  AED: { symbol: "د.إ", rate: 3.67 },
-  JOD: { symbol: "د.ا", rate: 0.71 },
-  KWD: { symbol: "د.ك", rate: 0.31 },
-  BHD: { symbol: ".د.ب", rate: 0.38 },
-  SAR: { symbol: "﷼", rate: 3.75 },
-  QAR: { symbol: "﷼", rate: 3.64 },
-  OMR: { symbol: "﷼", rate: 0.38 },
+// Currency symbols (no conversion rates needed - prices are pre-calculated)
+const currencyInfo: Record<SupportedCurrency, { symbol: string; flag: string }> = {
+  EUR: { symbol: "€", flag: "" },
+  USD: { symbol: "$", flag: "" },
+  AUD: { symbol: "A$", flag: "" },
+  CAD: { symbol: "C$", flag: "" },
+  JPY: { symbol: "¥", flag: "" },
+  SEK: { symbol: "kr", flag: "" },
+  PLN: { symbol: "zł", flag: "" },
+  BGN: { symbol: "лв", flag: "" },
+  DKK: { symbol: "kr", flag: "" },
+  CZK: { symbol: "Kč", flag: "" },
+  HUF: { symbol: "Ft", flag: "" },
+  NZD: { symbol: "NZ$", flag: "" },
+  NOK: { symbol: "kr", flag: "" },
+  GBP: { symbol: "£", flag: "" },
+  AED: { symbol: "د.إ", flag: "" },
+  JOD: { symbol: "د.ا", flag: "" },
+  KWD: { symbol: "د.ك", flag: "" },
+  BHD: { symbol: ".د.ب", flag: "" },
+  SAR: { symbol: "﷼", flag: "" },
+  QAR: { symbol: "﷼", flag: "" },
+  OMR: { symbol: "﷼", flag: "" },
 };
 
 const containerVariants = {
@@ -59,16 +59,63 @@ interface PricingProps {
 }
 
 export function Pricing({ showHeader = true }: PricingProps) {
-  const [currency, setCurrency] = useState<SupportedCurrency>("USD");
+  const [currency, setCurrency] = useState<SupportedCurrency>("EUR");
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [isCustom, setIsCustom] = useState(false);
+  const [customPDFs, setCustomPDFs] = useState(5);
+  const [customQuestions, setCustomQuestions] = useState(50);
+  const [customSize, setCustomSize] = useState(10);
+  const [apiAccess, setApiAccess] = useState(false);
+  const [teamUserCounts, setTeamUserCounts] = useState<Record<string, number>>({
+    Basic: 1,
+    Intermediate: 1,
+    Advanced: 1,
+    Professional: 1,
+  });
 
-  const formatPrice = (usdPrice: string) => {
-    const price = parseFloat(usdPrice) * currencyInfo[currency].rate;
-    // For JPY and HUF, don't show decimals
-    if (currency === "JPY" || currency === "HUF") {
-      return Math.round(price).toLocaleString();
+  const getPrice = (plan: typeof pricingData[0]) => {
+    const priceObj = plan.priceMonthly as Record<string, string>;
+    return priceObj[currency] || priceObj["EUR"];
+  };
+
+  const calculateCustomPrice = () => {
+    const rate = currencyConversionRates[currency] || 1;
+    const perPDFPrice = customPricingRates.perPDFBase * rate;
+    const perQuestionPrice = customPricingRates.perQuestionBase * rate;
+
+    let pdfPrice = customPDFs * perPDFPrice;
+    let questionPrice = customQuestions * perQuestionPrice;
+    let sizePrice = 0;
+
+    if (customSize <= 9.7) {
+      sizePrice = customSize * customPricingRates.sizePrice.upTo9MB * rate;
+    } else if (customSize <= 30) {
+      sizePrice = (9.7 * customPricingRates.sizePrice.upTo9MB + (customSize - 9.7) * customPricingRates.sizePrice.upTo30MB) * rate;
+    } else if (customSize <= 50) {
+      sizePrice = (9.7 * customPricingRates.sizePrice.upTo9MB + 20.3 * customPricingRates.sizePrice.upTo30MB + (customSize - 30) * customPricingRates.sizePrice.upTo50MB) * rate;
+    } else {
+      sizePrice = (9.7 * customPricingRates.sizePrice.upTo9MB + 20.3 * customPricingRates.sizePrice.upTo30MB + 20 * customPricingRates.sizePrice.upTo50MB + (customSize - 50) * customPricingRates.sizePrice.upTo50MB) * rate;
     }
-    return price.toFixed(2);
+
+    let total = pdfPrice + questionPrice + sizePrice;
+    if (apiAccess) total *= 1.1;
+
+    return total;
+  };
+
+  const calculateTeamPrice = (basePrice: Record<string, number>, planTitle: string) => {
+    const userCount = teamUserCounts[planTitle] || 1;
+    const price = basePrice[currency] || basePrice["EUR"];
+    const multiplier = teamUserMultipliers[userCount as keyof typeof teamUserMultipliers] || 1;
+    return (price * multiplier).toFixed(2);
+  };
+
+  const calculateTeamDocuments = (baseDocuments: number, planTitle: string) => {
+    return Math.floor(baseDocuments * (teamUserCounts[planTitle] || 1));
+  };
+
+  const calculateTeamQuestions = (baseQuestions: number, planTitle: string) => {
+    return Math.floor(baseQuestions * (teamUserCounts[planTitle] || 1));
   };
 
   return (
@@ -145,10 +192,128 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 )}
               </div>
             </motion.div>
+
+            {/* Preset/Custom Toggle */}
+            <motion.div
+              className="mt-8 flex justify-center"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+            >
+              <label className="relative inline-flex cursor-pointer items-center">
+                <span className={cn(
+                  "mr-3 text-sm font-semibold",
+                  !isCustom ? "text-primary" : "text-gray-500 dark:text-gray-400"
+                )}>
+                  Preset Packs
+                </span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={isCustom}
+                    onChange={() => setIsCustom(!isCustom)}
+                  />
+                  <div className="h-6 w-11 rounded-full bg-gray-200 peer-checked:bg-primary dark:bg-gray-700"></div>
+                  <div className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+                </div>
+                <span className={cn(
+                  "ml-3 text-sm font-semibold",
+                  isCustom ? "text-primary" : "text-gray-500 dark:text-gray-400"
+                )}>
+                  Custom Pack
+                </span>
+              </label>
+            </motion.div>
           </div>
         )}
 
-        {/* Pricing Cards */}
+        {/* Custom Pack */}
+        {isCustom ? (
+          <motion.div
+            className="mx-auto max-w-md"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+              <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+                Custom Plan
+              </h3>
+              <div className="mb-6 flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                  {currencyInfo[currency].symbol}{calculateCustomPrice().toFixed(2)}
+                </span>
+              </div>
+
+              {/* PDF Slider */}
+              <div className="mb-6">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {customPDFs} PDFs
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="300"
+                  value={customPDFs}
+                  onChange={(e) => setCustomPDFs(Number(e.target.value))}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-primary dark:bg-gray-700"
+                />
+              </div>
+
+              {/* Questions Slider */}
+              <div className="mb-6">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {customQuestions} Questions
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="3000"
+                  step="10"
+                  value={customQuestions}
+                  onChange={(e) => setCustomQuestions(Number(e.target.value))}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-primary dark:bg-gray-700"
+                />
+              </div>
+
+              {/* Size Slider */}
+              <div className="mb-6">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {customSize} MB/pdf
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={customSize}
+                  onChange={(e) => setCustomSize(Number(e.target.value))}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-primary dark:bg-gray-700"
+                />
+              </div>
+
+              {/* API Access Checkbox */}
+              <div className="mb-8">
+                <label className="flex cursor-pointer items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={apiAccess}
+                    onChange={(e) => setApiAccess(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    API Access (+10%)
+                  </span>
+                </label>
+              </div>
+
+              <Link href={`/checkout?custom=true&price=${calculateCustomPrice().toFixed(2)}&pdfs=${customPDFs}&questions=${customQuestions}&size=${customSize}&api=${apiAccess}&currency=${currency}`}>
+                <Button className="w-full">Get Started</Button>
+              </Link>
+            </div>
+          </motion.div>
+        ) : (
+          /* Pricing Cards */
         <motion.div
           className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
           variants={containerVariants}
@@ -179,9 +344,8 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 </h3>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                    {currencyInfo[currency].symbol}{formatPrice(plan.priceMonthly)}
+                    {currencyInfo[currency].symbol}{getPrice(plan)}
                   </span>
-                  <span className="text-gray-500">/month</span>
                 </div>
               </div>
 
@@ -206,6 +370,82 @@ export function Pricing({ showHeader = true }: PricingProps) {
               </Link>
             </motion.div>
           ))}
+        </motion.div>
+        )}
+
+        {/* Team Pricing Section */}
+        <motion.div
+          className="mt-20"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <h2 className="mb-12 text-center text-3xl font-bold text-gray-900 dark:text-white">
+            Buying for a team?
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {teamPricingData.map((plan) => (
+              <div
+                key={plan.id}
+                className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+              >
+                <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+                  {plan.title}
+                </h3>
+                <div className="mb-4 flex items-baseline gap-1">
+                  <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                    {currencyInfo[currency].symbol}{calculateTeamPrice(plan.basePrice, plan.title)}
+                  </span>
+                </div>
+
+                {/* User Count Selector */}
+                <div className="mb-4">
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Number of Users:
+                  </label>
+                  <select
+                    value={teamUserCounts[plan.title] || 1}
+                    onChange={(e) => setTeamUserCounts(prev => ({
+                      ...prev,
+                      [plan.title]: Number(e.target.value)
+                    }))}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                      <option key={num} value={num}>{num}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <ul className="mb-6 space-y-3">
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {calculateTeamDocuments(plan.baseDocuments, plan.title)} Documents
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Max document size: {plan.maxSize}
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {calculateTeamQuestions(plan.baseQuestions, plan.title)} document questions
+                    </span>
+                  </li>
+                </ul>
+
+                <Link href={`/checkout?team=${plan.title}&users=${teamUserCounts[plan.title] || 1}&documents=${calculateTeamDocuments(plan.baseDocuments, plan.title)}&questions=${calculateTeamQuestions(plan.baseQuestions, plan.title)}&currency=${currency}`}>
+                  <Button variant="outline" className="w-full">
+                    Buy
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
         </motion.div>
 
         {/* Pricing Information Block */}

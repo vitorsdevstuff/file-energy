@@ -53,7 +53,7 @@ function CheckoutContent() {
   const currencyParam = searchParams.get("currency") as SupportedCurrency | null;
 
   const [currency] = useState<SupportedCurrency>(
-    currencyParam && SUPPORTED_CURRENCIES.includes(currencyParam) ? currencyParam : "USD"
+    currencyParam && SUPPORTED_CURRENCIES.includes(currencyParam) ? currencyParam : "EUR"
   );
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [digitalServiceAccepted, setDigitalServiceAccepted] = useState(false);
@@ -63,12 +63,9 @@ function CheckoutContent() {
   // Find the selected plan
   const selectedPlan = pricingData.find((p) => p.id.toString() === planId);
 
-  const formatPrice = (usdPrice: string) => {
-    const price = parseFloat(usdPrice) * currencyInfo[currency].rate;
-    if (currency === "JPY" || currency === "HUF") {
-      return Math.round(price).toLocaleString();
-    }
-    return price.toFixed(2);
+  const getPrice = (plan: typeof pricingData[0]) => {
+    const priceObj = plan.priceMonthly as Record<string, string>;
+    return priceObj[currency] || priceObj["EUR"];
   };
 
   const canPay = termsAccepted && digitalServiceAccepted;
@@ -122,7 +119,7 @@ function CheckoutContent() {
     );
   }
 
-  const totalPrice = `${currencyInfo[currency].symbol}${formatPrice(selectedPlan.priceMonthly)}`;
+  const totalPrice = `${currencyInfo[currency].symbol}${getPrice(selectedPlan)}`;
 
   return (
     <div className="min-h-screen pt-24 pb-20">

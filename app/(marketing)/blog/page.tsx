@@ -7,6 +7,7 @@ import { ArrowRight, Calendar, Clock, User } from "lucide-react";
 const blogPosts = [
   {
     id: 1,
+    slug: "ai-revolutionizing-document-management",
     title: "How AI is Revolutionizing Document Management",
     excerpt:
       "Discover how artificial intelligence is transforming the way businesses handle and analyze their documents, saving time and unlocking new insights.",
@@ -18,6 +19,7 @@ const blogPosts = [
   },
   {
     id: 2,
+    slug: "boost-productivity-with-file-energy",
     title: "5 Ways to Boost Productivity with File.energy",
     excerpt:
       "Learn practical tips and tricks to maximize your efficiency when working with documents using our AI-powered platform.",
@@ -29,6 +31,7 @@ const blogPosts = [
   },
   {
     id: 3,
+    slug: "future-of-data-visualization",
     title: "The Future of Data Visualization",
     excerpt:
       "Explore how AI-driven data visualization is making complex information more accessible and actionable for everyone.",
@@ -40,6 +43,7 @@ const blogPosts = [
   },
   {
     id: 4,
+    slug: "security-best-practices-document-management",
     title: "Security Best Practices for Document Management",
     excerpt:
       "Understanding the importance of security when handling sensitive documents and how File.energy keeps your data safe.",
@@ -141,7 +145,7 @@ export default function BlogPage() {
 
                 {/* Read More */}
                 <Link
-                  href="#"
+                  href={`/blog/${post.slug}`}
                   className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:gap-3 transition-all"
                 >
                   Read More
