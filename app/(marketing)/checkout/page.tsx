@@ -140,6 +140,7 @@ function CheckoutContent() {
         body.users = teamUsers;
         body.documents = teamDocuments;
         body.questions = teamQuestions;
+        body.price = searchParams.get("price");
       } else {
         body.type = "standard";
         body.planId = planId;
