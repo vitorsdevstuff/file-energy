@@ -10,29 +10,29 @@ import { Check, Shield, ArrowLeft, Loader2 } from "lucide-react";
 import { pricingData } from "@/lib/data";
 import { SUPPORTED_CURRENCIES, type SupportedCurrency } from "@/lib/g2pay";
 
-// Currency symbols and conversion rates
-const currencyInfo: Record<SupportedCurrency, { symbol: string; rate: number }> = {
-  EUR: { symbol: "€", rate: 0.92 },
-  USD: { symbol: "$", rate: 1 },
-  AUD: { symbol: "A$", rate: 1.53 },
-  CAD: { symbol: "C$", rate: 1.36 },
-  JPY: { symbol: "¥", rate: 149 },
-  SEK: { symbol: "kr", rate: 10.5 },
-  PLN: { symbol: "zł", rate: 4.0 },
-  BGN: { symbol: "лв", rate: 1.8 },
-  DKK: { symbol: "kr", rate: 6.9 },
-  CZK: { symbol: "Kč", rate: 23 },
-  HUF: { symbol: "Ft", rate: 360 },
-  NZD: { symbol: "NZ$", rate: 1.65 },
-  NOK: { symbol: "kr", rate: 10.7 },
-  GBP: { symbol: "£", rate: 0.79 },
-  AED: { symbol: "د.إ", rate: 3.67 },
-  JOD: { symbol: "د.ا", rate: 0.71 },
-  KWD: { symbol: "د.ك", rate: 0.31 },
-  BHD: { symbol: ".د.ب", rate: 0.38 },
-  SAR: { symbol: "﷼", rate: 3.75 },
-  QAR: { symbol: "﷼", rate: 3.64 },
-  OMR: { symbol: "﷼", rate: 0.38 },
+// Currency symbols
+const currencyInfo: Record<SupportedCurrency, { symbol: string }> = {
+  EUR: { symbol: "€" },
+  USD: { symbol: "$" },
+  AUD: { symbol: "A$" },
+  CAD: { symbol: "C$" },
+  JPY: { symbol: "¥" },
+  SEK: { symbol: "kr" },
+  PLN: { symbol: "zł" },
+  BGN: { symbol: "лв" },
+  DKK: { symbol: "kr" },
+  CZK: { symbol: "Kč" },
+  HUF: { symbol: "Ft" },
+  NZD: { symbol: "NZ$" },
+  NOK: { symbol: "kr" },
+  GBP: { symbol: "£" },
+  AED: { symbol: "د.إ" },
+  JOD: { symbol: "د.ا" },
+  KWD: { symbol: "د.ك" },
+  BHD: { symbol: ".د.ب" },
+  SAR: { symbol: "﷼" },
+  QAR: { symbol: "﷼" },
+  OMR: { symbol: "﷼" },
 };
 
 function CheckoutLoading() {
@@ -49,8 +49,23 @@ function CheckoutLoading() {
 function CheckoutContent() {
   const searchParams = useSearchParams();
 
+  // Standard plan params
   const planId = searchParams.get("plan");
   const currencyParam = searchParams.get("currency") as SupportedCurrency | null;
+
+  // Custom plan params
+  const isCustom = searchParams.get("custom") === "true";
+  const customPrice = searchParams.get("price");
+  const customPDFs = searchParams.get("pdfs");
+  const customQuestions = searchParams.get("questions");
+  const customSize = searchParams.get("size");
+  const customApi = searchParams.get("api") === "true";
+
+  // Team plan params
+  const teamPlan = searchParams.get("team");
+  const teamUsers = searchParams.get("users");
+  const teamDocuments = searchParams.get("documents");
+  const teamQuestions = searchParams.get("questions");
 
   const [currency] = useState<SupportedCurrency>(
     currencyParam && SUPPORTED_CURRENCIES.includes(currencyParam) ? currencyParam : "EUR"
@@ -60,30 +75,80 @@ function CheckoutContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Find the selected plan
-  const selectedPlan = pricingData.find((p) => p.id.toString() === planId);
+  // Determine plan type and details
+  let planTitle = "";
+  let planFeatures: string[] = [];
+  let totalPrice = "";
 
-  const getPrice = (plan: typeof pricingData[0]) => {
-    const priceObj = plan.priceMonthly as Record<string, string>;
-    return priceObj[currency] || priceObj["EUR"];
-  };
+  if (isCustom && customPrice) {
+    // Custom plan
+    planTitle = "Custom Plan";
+    planFeatures = [
+      `${customPDFs} Documents`,
+      `Max document size: ${customSize}MB/pdf`,
+      `${customQuestions} document questions`,
+    ];
+    if (customApi) {
+      planFeatures.push("API Access included");
+    }
+    totalPrice = `${currencyInfo[currency].symbol}${customPrice}`;
+  } else if (teamPlan) {
+    // Team plan
+    planTitle = `${teamPlan} Team Plan`;
+    planFeatures = [
+      `${teamUsers} Users`,
+      `${teamDocuments} Documents`,
+      `${teamQuestions} document questions`,
+    ];
+    // Team price should be passed in URL
+    const teamPrice = searchParams.get("price");
+    totalPrice = teamPrice ? `${currencyInfo[currency].symbol}${teamPrice}` : "";
+  } else if (planId) {
+    // Standard preset plan
+    const selectedPlan = pricingData.find((p) => p.id.toString() === planId);
+    if (selectedPlan) {
+      planTitle = `${selectedPlan.title} Plan`;
+      planFeatures = selectedPlan.priceList.map((f) => f.name);
+      const priceObj = selectedPlan.priceMonthly as Record<string, string>;
+      const price = priceObj[currency] || priceObj["EUR"];
+      totalPrice = `${currencyInfo[currency].symbol}${price}`;
+    }
+  }
 
-  const canPay = termsAccepted && digitalServiceAccepted;
+  const hasValidPlan = planTitle && totalPrice;
+  const canPay = termsAccepted && digitalServiceAccepted && hasValidPlan;
 
   const handlePayment = async () => {
-    if (!canPay || !selectedPlan) return;
+    if (!canPay) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
+      const body: Record<string, unknown> = { currency };
+
+      if (isCustom) {
+        body.type = "custom";
+        body.price = customPrice;
+        body.pdfs = customPDFs;
+        body.questions = customQuestions;
+        body.size = customSize;
+        body.api = customApi;
+      } else if (teamPlan) {
+        body.type = "team";
+        body.plan = teamPlan;
+        body.users = teamUsers;
+        body.documents = teamDocuments;
+        body.questions = teamQuestions;
+      } else {
+        body.type = "standard";
+        body.planId = planId;
+      }
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId: selectedPlan.id.toString(),
-          currency,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
@@ -101,7 +166,7 @@ function CheckoutContent() {
     }
   };
 
-  if (!selectedPlan) {
+  if (!hasValidPlan) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-20">
         <div className="text-center">
@@ -118,8 +183,6 @@ function CheckoutContent() {
       </div>
     );
   }
-
-  const totalPrice = `${currencyInfo[currency].symbol}${getPrice(selectedPlan)}`;
 
   return (
     <div className="min-h-screen pt-24 pb-20">
@@ -161,13 +224,13 @@ function CheckoutContent() {
           <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-4 dark:border-gray-800">
             <div>
               <h3 className="font-medium text-gray-900 dark:text-white">
-                {selectedPlan.title} Plan
+                {planTitle}
               </h3>
               <ul className="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                {selectedPlan.priceList.map((feature, idx) => (
+                {planFeatures.map((feature, idx) => (
                   <li key={idx} className="flex items-center gap-2">
                     <Check className="h-3 w-3 text-primary" />
-                    {feature.name}
+                    {feature}
                   </li>
                 ))}
               </ul>

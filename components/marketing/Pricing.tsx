@@ -438,7 +438,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                   </li>
                 </ul>
 
-                <Link href={`/checkout?team=${plan.title}&users=${teamUserCounts[plan.title] || 1}&documents=${calculateTeamDocuments(plan.baseDocuments, plan.title)}&questions=${calculateTeamQuestions(plan.baseQuestions, plan.title)}&currency=${currency}`}>
+                <Link href={`/checkout?team=${plan.title}&users=${teamUserCounts[plan.title] || 1}&documents=${calculateTeamDocuments(plan.baseDocuments, plan.title)}&questions=${calculateTeamQuestions(plan.baseQuestions, plan.title)}&price=${calculateTeamPrice(plan.basePrice, plan.title)}&currency=${currency}`}>
                   <Button variant="outline" className="w-full">
                     Buy
                   </Button>
