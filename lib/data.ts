@@ -62,13 +62,6 @@ export const faqData = [
     answer:
       "Getting started with File.energy is easy. Simply sign up for an account, upload your files, and start chatting with your documents right away.",
   },
-  {
-    id: 6,
-    type: ["general", "integrations"],
-    question: "Does File.energy integrate with other tools?",
-    answer:
-      "Yes, File.energy integrates with popular tools like Google Drive, Dropbox, and OneDrive, making it easy to import and manage your files from various sources.",
-  },
 ];
 
 export const testimonialData = [
