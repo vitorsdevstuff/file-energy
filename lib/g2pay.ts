@@ -8,28 +8,33 @@ const BEARER_TOKEN = process.env.G2PAY_BEARER_TOKEN || "";
 export const SUPPORTED_CURRENCIES = [
   "EUR",
   "USD",
+  "GBP",
   "AUD",
-  "CAD",
-  "JPY",
-  "SEK",
+  "NZD",
+  "CHF",
   "PLN",
-  "BGN",
-  "DKK",
   "CZK",
   "HUF",
-  "NZD",
-  "NOK",
-  "GBP",
   "AED",
-  "JOD",
-  "KWD",
-  "BHD",
-  "SAR",
-  "QAR",
-  "OMR",
 ] as const;
 
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
+export const CURRENCY_INFO: Record<
+  SupportedCurrency,
+  { symbol: string; label: string }
+> = {
+  EUR: { symbol: "€", label: "Euro" },
+  USD: { symbol: "$", label: "US Dollar" },
+  GBP: { symbol: "£", label: "British Pound" },
+  AUD: { symbol: "A$", label: "Australian Dollar" },
+  NZD: { symbol: "NZ$", label: "New Zealand Dollar" },
+  CHF: { symbol: "Fr.", label: "Swiss Franc" },
+  PLN: { symbol: "zł", label: "Polish Zloty" },
+  CZK: { symbol: "Kč", label: "Czech Koruna" },
+  HUF: { symbol: "Ft", label: "Hungarian Forint" },
+  AED: { symbol: "د.إ", label: "UAE Dirham" },
+};
 
 export function isSupportedCurrency(
   currency: string

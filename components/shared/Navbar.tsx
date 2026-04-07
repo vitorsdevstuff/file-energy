@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Logo } from "./Logo";
 import { UserDropdown } from "./UserDropdown";
+import { CurrencySwitcher } from "./CurrencySwitcher";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { menuData } from "@/lib/data";
@@ -61,6 +62,7 @@ export function Navbar() {
 
         {/* Desktop CTA / User Menu */}
         <div className="hidden items-center gap-4 md:flex">
+          <CurrencySwitcher />
           {isLoading ? (
             <div className="h-9 w-24 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700" />
           ) : isAuthenticated ? (
@@ -124,7 +126,13 @@ export function Navbar() {
                     {item.title}
                   </Link>
                 ))}
-                <div className="flex flex-col gap-2 pt-4">
+                <div className="flex items-center justify-between pt-4">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Currency
+                  </span>
+                  <CurrencySwitcher align="end" />
+                </div>
+                <div className="flex flex-col gap-2 pt-2">
                   {isAuthenticated ? (
                     <>
                       <Link

@@ -6,34 +6,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { pricingData, teamPricingData, teamUserMultipliers, customPricingRates, currencyConversionRates } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronDown } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SUPPORTED_CURRENCIES, type SupportedCurrency } from "@/lib/g2pay";
-
-// Currency symbols (no conversion rates needed - prices are pre-calculated)
-const currencyInfo: Record<SupportedCurrency, { symbol: string; flag: string }> = {
-  EUR: { symbol: "€", flag: "" },
-  USD: { symbol: "$", flag: "" },
-  AUD: { symbol: "A$", flag: "" },
-  CAD: { symbol: "C$", flag: "" },
-  JPY: { symbol: "¥", flag: "" },
-  SEK: { symbol: "kr", flag: "" },
-  PLN: { symbol: "zł", flag: "" },
-  BGN: { symbol: "лв", flag: "" },
-  DKK: { symbol: "kr", flag: "" },
-  CZK: { symbol: "Kč", flag: "" },
-  HUF: { symbol: "Ft", flag: "" },
-  NZD: { symbol: "NZ$", flag: "" },
-  NOK: { symbol: "kr", flag: "" },
-  GBP: { symbol: "£", flag: "" },
-  AED: { symbol: "د.إ", flag: "" },
-  JOD: { symbol: "د.ا", flag: "" },
-  KWD: { symbol: "د.ك", flag: "" },
-  BHD: { symbol: ".د.ب", flag: "" },
-  SAR: { symbol: "﷼", flag: "" },
-  QAR: { symbol: "﷼", flag: "" },
-  OMR: { symbol: "﷼", flag: "" },
-};
+import { CURRENCY_INFO } from "@/lib/g2pay";
+import { CurrencySwitcher } from "@/components/shared/CurrencySwitcher";
+import { useCurrency } from "@/lib/currency-context";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -59,8 +36,8 @@ interface PricingProps {
 }
 
 export function Pricing({ showHeader = true }: PricingProps) {
-  const [currency, setCurrency] = useState<SupportedCurrency>("EUR");
-  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const { currency } = useCurrency();
+  const currencySymbol = CURRENCY_INFO[currency].symbol;
   const [isCustom, setIsCustom] = useState(false);
   const [customPDFs, setCustomPDFs] = useState(5);
   const [customQuestions, setCustomQuestions] = useState(50);
@@ -159,38 +136,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
             >
-              <div className="relative">
-                <button
-                  onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
-                  className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                >
-                  <span>{currencyInfo[currency].symbol}</span>
-                  <span>{currency}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                {showCurrencyDropdown && (
-                  <div className="absolute top-full left-0 z-50 mt-2 max-h-60 w-40 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                    {SUPPORTED_CURRENCIES.map((curr) => (
-                      <button
-                        key={curr}
-                        onClick={() => {
-                          setCurrency(curr);
-                          setShowCurrencyDropdown(false);
-                        }}
-                        className={cn(
-                          "flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700",
-                          curr === currency
-                            ? "bg-primary/10 text-primary"
-                            : "text-gray-700 dark:text-gray-300"
-                        )}
-                      >
-                        <span className="w-8">{currencyInfo[curr].symbol}</span>
-                        <span>{curr}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <CurrencySwitcher align="center" />
             </motion.div>
 
             {/* Preset/Custom Toggle */}
@@ -242,7 +188,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
               </h3>
               <div className="mb-6 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                  {currencyInfo[currency].symbol}{calculateCustomPrice().toFixed(2)}
+                  {currencySymbol}{calculateCustomPrice().toFixed(2)}
                 </span>
               </div>
 
@@ -344,7 +290,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 </h3>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                    {currencyInfo[currency].symbol}{getPrice(plan)}
+                    {currencySymbol}{getPrice(plan)}
                   </span>
                 </div>
               </div>
@@ -394,7 +340,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 </h3>
                 <div className="mb-4 flex items-baseline gap-1">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {currencyInfo[currency].symbol}{calculateTeamPrice(plan.basePrice, plan.title)}
+                    {currencySymbol}{calculateTeamPrice(plan.basePrice, plan.title)}
                   </span>
                 </div>
 

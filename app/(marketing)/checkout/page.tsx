@@ -8,32 +8,12 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Check, Shield, ArrowLeft, Loader2 } from "lucide-react";
 import { pricingData } from "@/lib/data";
-import { SUPPORTED_CURRENCIES, type SupportedCurrency } from "@/lib/g2pay";
-
-// Currency symbols
-const currencyInfo: Record<SupportedCurrency, { symbol: string }> = {
-  EUR: { symbol: "€" },
-  USD: { symbol: "$" },
-  AUD: { symbol: "A$" },
-  CAD: { symbol: "C$" },
-  JPY: { symbol: "¥" },
-  SEK: { symbol: "kr" },
-  PLN: { symbol: "zł" },
-  BGN: { symbol: "лв" },
-  DKK: { symbol: "kr" },
-  CZK: { symbol: "Kč" },
-  HUF: { symbol: "Ft" },
-  NZD: { symbol: "NZ$" },
-  NOK: { symbol: "kr" },
-  GBP: { symbol: "£" },
-  AED: { symbol: "د.إ" },
-  JOD: { symbol: "د.ا" },
-  KWD: { symbol: "د.ك" },
-  BHD: { symbol: ".د.ب" },
-  SAR: { symbol: "﷼" },
-  QAR: { symbol: "﷼" },
-  OMR: { symbol: "﷼" },
-};
+import {
+  CURRENCY_INFO,
+  isSupportedCurrency,
+  type SupportedCurrency,
+} from "@/lib/g2pay";
+import { useCurrency } from "@/lib/currency-context";
 
 function CheckoutLoading() {
   return (
@@ -48,10 +28,11 @@ function CheckoutLoading() {
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
+  const { currency: globalCurrency } = useCurrency();
 
   // Standard plan params
   const planId = searchParams.get("plan");
-  const currencyParam = searchParams.get("currency") as SupportedCurrency | null;
+  const currencyParam = searchParams.get("currency");
 
   // Custom plan params
   const isCustom = searchParams.get("custom") === "true";
@@ -67,9 +48,12 @@ function CheckoutContent() {
   const teamDocuments = searchParams.get("documents");
   const teamQuestions = searchParams.get("questions");
 
-  const [currency] = useState<SupportedCurrency>(
-    currencyParam && SUPPORTED_CURRENCIES.includes(currencyParam) ? currencyParam : "EUR"
-  );
+  // Precedence: valid URL param > global selected currency > EUR fallback
+  const currency: SupportedCurrency =
+    currencyParam && isSupportedCurrency(currencyParam)
+      ? currencyParam
+      : globalCurrency;
+  const currencySymbol = CURRENCY_INFO[currency].symbol;
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [digitalServiceAccepted, setDigitalServiceAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,7 +75,7 @@ function CheckoutContent() {
     if (customApi) {
       planFeatures.push("API Access included");
     }
-    totalPrice = `${currencyInfo[currency].symbol}${customPrice}`;
+    totalPrice = `${currencySymbol}${customPrice}`;
   } else if (teamPlan) {
     // Team plan
     planTitle = `${teamPlan} Team Plan`;
@@ -102,7 +86,7 @@ function CheckoutContent() {
     ];
     // Team price should be passed in URL
     const teamPrice = searchParams.get("price");
-    totalPrice = teamPrice ? `${currencyInfo[currency].symbol}${teamPrice}` : "";
+    totalPrice = teamPrice ? `${currencySymbol}${teamPrice}` : "";
   } else if (planId) {
     // Standard preset plan
     const selectedPlan = pricingData.find((p) => p.id.toString() === planId);
@@ -111,7 +95,7 @@ function CheckoutContent() {
       planFeatures = selectedPlan.priceList.map((f) => f.name);
       const priceObj = selectedPlan.priceMonthly as Record<string, string>;
       const price = priceObj[currency] || priceObj["EUR"];
-      totalPrice = `${currencyInfo[currency].symbol}${price}`;
+      totalPrice = `${currencySymbol}${price}`;
     }
   }
 

@@ -31,27 +31,29 @@ describe("SUPPORTED_CURRENCIES", () => {
     expect(SUPPORTED_CURRENCIES).toContain("USD");
     expect(SUPPORTED_CURRENCIES).toContain("GBP");
     expect(SUPPORTED_CURRENCIES).toContain("AUD");
-    expect(SUPPORTED_CURRENCIES).toContain("CAD");
+    expect(SUPPORTED_CURRENCIES).toContain("NZD");
   });
 
   it("should include Middle Eastern currencies", () => {
     expect(SUPPORTED_CURRENCIES).toContain("AED");
-    expect(SUPPORTED_CURRENCIES).toContain("SAR");
-    expect(SUPPORTED_CURRENCIES).toContain("QAR");
-    expect(SUPPORTED_CURRENCIES).toContain("KWD");
   });
 
   it("should include European currencies", () => {
-    expect(SUPPORTED_CURRENCIES).toContain("SEK");
+    expect(SUPPORTED_CURRENCIES).toContain("CHF");
     expect(SUPPORTED_CURRENCIES).toContain("PLN");
-    expect(SUPPORTED_CURRENCIES).toContain("DKK");
     expect(SUPPORTED_CURRENCIES).toContain("CZK");
     expect(SUPPORTED_CURRENCIES).toContain("HUF");
-    expect(SUPPORTED_CURRENCIES).toContain("NOK");
   });
 
-  it("should have 21 supported currencies", () => {
-    expect(SUPPORTED_CURRENCIES).toHaveLength(21);
+  it("should have 10 supported currencies", () => {
+    expect(SUPPORTED_CURRENCIES).toHaveLength(10);
+  });
+
+  it("should not include removed currencies", () => {
+    const removed = ["CAD", "JPY", "SEK", "BGN", "DKK", "NOK", "JOD", "KWD", "BHD", "SAR", "QAR", "OMR"];
+    for (const code of removed) {
+      expect(SUPPORTED_CURRENCIES).not.toContain(code);
+    }
   });
 });
 
