@@ -44,7 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         if (!user.isActive) {
-          throw new Error("Account is not active. Please verify your email.");
+          throw new Error("Account is not active. Please contact support.");
         }
 
         return {
@@ -52,22 +52,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.username,
           role: user.role,
+          isEmailVerified: user.emailVerifiedAt !== null,
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.isEmailVerified = user.isEmailVerified;
       }
+
+      // Refresh isEmailVerified from the DB on explicit session updates —
+      // this lets the UI pick up a newly verified email without a re-login.
+      if (trigger === "update" && token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { emailVerifiedAt: true },
+        });
+        if (dbUser) {
+          token.isEmailVerified = dbUser.emailVerifiedAt !== null;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.isEmailVerified = Boolean(token.isEmailVerified);
       }
       return session;
     },

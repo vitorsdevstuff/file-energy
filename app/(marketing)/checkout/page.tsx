@@ -3,10 +3,12 @@
 import { useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
-import { Check, Shield, ArrowLeft, Loader2 } from "lucide-react";
+import { Check, Shield, ArrowLeft, Loader2, MailWarning } from "lucide-react";
 import { pricingData } from "@/lib/data";
 import {
   CURRENCY_INFO,
@@ -29,6 +31,31 @@ function CheckoutLoading() {
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const { currency: globalCurrency } = useCurrency();
+  const { data: session, status: sessionStatus } = useSession();
+  const isEmailVerified = session?.user?.isEmailVerified ?? false;
+  const isSessionLoading = sessionStatus === "loading";
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+
+  const handleResendVerification = async () => {
+    setIsResendingEmail(true);
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast.error(data.error || "Failed to resend verification email");
+        return;
+      }
+      toast.success("Verification email sent. Check your inbox.");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
 
   // Standard plan params
   const planId = searchParams.get("plan");
@@ -100,7 +127,13 @@ function CheckoutContent() {
   }
 
   const hasValidPlan = planTitle && totalPrice;
-  const canPay = termsAccepted && digitalServiceAccepted && hasValidPlan;
+  const isLoggedIn = sessionStatus === "authenticated";
+  const canPay =
+    termsAccepted &&
+    digitalServiceAccepted &&
+    hasValidPlan &&
+    isLoggedIn &&
+    isEmailVerified;
 
   const handlePayment = async () => {
     if (!canPay) return;
@@ -236,6 +269,56 @@ function CheckoutContent() {
             </p>
           </div>
         </motion.div>
+
+        {/* Email verification banner */}
+        {!isSessionLoading && isLoggedIn && !isEmailVerified && (
+          <motion.div
+            className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <MailWarning className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1 text-sm">
+              <p className="font-medium text-amber-900 dark:text-amber-100">
+                Verify your email to continue
+              </p>
+              <p className="mt-1 text-amber-800 dark:text-amber-200">
+                We sent a verification link to{" "}
+                <span className="font-medium">{session?.user?.email}</span>.
+                You&apos;ll need to confirm it before making a purchase.
+              </p>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResendingEmail}
+                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-amber-900 underline hover:text-amber-700 disabled:opacity-60 dark:text-amber-100 dark:hover:text-amber-300"
+              >
+                {isResendingEmail ? "Sending…" : "Resend verification email"}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Not logged in banner */}
+        {!isSessionLoading && !isLoggedIn && (
+          <motion.div
+            className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <p className="text-amber-900 dark:text-amber-100">
+              Please{" "}
+              <Link href="/login" className="font-medium underline">
+                sign in
+              </Link>{" "}
+              or{" "}
+              <Link href="/register" className="font-medium underline">
+                create an account
+              </Link>{" "}
+              to continue with checkout.
+            </p>
+          </motion.div>
+        )}
 
         {/* Information Block */}
         <motion.div

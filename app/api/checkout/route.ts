@@ -72,6 +72,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Email must be verified before any payment can be created.
+    if (!user.emailVerifiedAt) {
+      return NextResponse.json(
+        {
+          error:
+            "Please verify your email address before making a purchase.",
+          code: "EMAIL_NOT_VERIFIED",
+        },
+        { status: 403 }
+      );
+    }
+
     let planName: string;
     let price: number;
     let pdfs: number;

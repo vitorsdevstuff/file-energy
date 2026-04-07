@@ -8,12 +8,14 @@ declare module "next-auth" {
       email: string;
       name: string;
       role: string;
+      isEmailVerified: boolean;
     };
   }
 
   interface User {
     id: string;
     role: string;
+    isEmailVerified?: boolean;
   }
 }
 
@@ -21,6 +23,7 @@ declare module "@auth/core/jwt" {
   interface JWT {
     id: string;
     role: string;
+    isEmailVerified?: boolean;
   }
 }
 

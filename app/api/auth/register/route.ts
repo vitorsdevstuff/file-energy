@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
+import { createVerificationToken } from "@/lib/verification";
+import { sendVerificationEmail } from "@/lib/email";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -29,20 +31,37 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Create user
+    // Create user (email verification gated separately via emailVerifiedAt)
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         username,
-        isActive: true, // In production, you'd want email verification
+        isActive: true,
       },
     });
+
+    // Issue a verification token and send the email. We intentionally do not
+    // fail the registration if sending fails — the user can request a resend.
+    try {
+      const { token } = await createVerificationToken(email);
+      const result = await sendVerificationEmail({
+        to: email,
+        username,
+        token,
+      });
+      if (!result.ok) {
+        console.error("[register] Verification email send failed:", result.error);
+      }
+    } catch (err) {
+      console.error("[register] Failed to issue verification email:", err);
+    }
 
     return NextResponse.json(
       {
         success: true,
-        message: "User registered successfully",
+        message:
+          "Account created. Check your inbox to verify your email address.",
         user: {
           id: user.id,
           email: user.email,
