@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { createVerificationToken } from "@/lib/verification";
 import { sendVerificationEmail } from "@/lib/email";
+import { notifyUserRegistered } from "@/lib/telegram";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -39,6 +40,11 @@ export async function POST(req: NextRequest) {
         username,
         isActive: true,
       },
+    });
+
+    // Fire-and-forget Telegram notification — never block registration on it.
+    notifyUserRegistered({ email, username }).catch((err) => {
+      console.error("[register] Telegram notification failed:", err);
     });
 
     // Issue a verification token and send the email. We intentionally do not

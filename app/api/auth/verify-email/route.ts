@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { consumeVerificationToken } from "@/lib/verification";
 import { getBaseUrl } from "@/lib/email";
+import { notifyEmailVerified } from "@/lib/telegram";
 
 function redirectWithStatus(
   status: "success" | "invalid" | "expired",
@@ -45,6 +46,12 @@ export async function GET(req: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: { emailVerifiedAt: new Date() },
+    });
+
+    // Fire-and-forget Telegram notification. Only fired on the first
+    // verification — re-clicking a stale link won't re-notify.
+    notifyEmailVerified({ email: result.identifier }).catch((err) => {
+      console.error("[verify-email] Telegram notification failed:", err);
     });
   }
 
