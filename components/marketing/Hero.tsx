@@ -135,7 +135,7 @@ export function Hero() {
               className="mx-auto mb-8 max-w-xl text-lg text-gray-600 dark:text-gray-300 lg:mx-0 lg:text-xl"
               variants={fadeUpAnimation}
             >
-              2025: When AI is changing the world, let File.energy{" "}
+              2026: When AI is changing the world, let File.energy{" "}
               <span className="inline-block">⚡</span> help you save your time
               on documents, and give your energy to things that really matter.
             </motion.p>
