@@ -324,15 +324,23 @@ export const teamUserMultipliers: Record<number, number> = {
   1: 1, 2: 1.7, 3: 2.4, 4: 3, 5: 3.5, 6: 3.9, 7: 4.19, 8: 4.4
 };
 
-// Custom pricing base rates (in EUR)
+// Custom pricing base rates (in EUR) Backup
+// export const customPricingRates = {
+//   perPDFBase: 10.99 / 5,
+//   perQuestionBase: 10.99 / 103,
+//   sizePrice: {
+//     upTo9MB: 10.99 / 9.7,
+//     upTo30MB: (29.99 - 10.99) / (30 - 9.7),
+//     upTo50MB: (49.99 - 29.99) / (50 - 30),
+//   }
+// };
+
+// Custom pricing base rates (in EUR), derived from Test Pack baseline (€2.75 / 5 PDFs / 50 questions / 10MB)
+// Weight distribution: 40% PDFs, 35% questions, 25% size
 export const customPricingRates = {
-  perPDFBase: 10.99 / 5,
-  perQuestionBase: 10.99 / 103,
-  sizePrice: {
-    upTo9MB: 10.99 / 9.7,
-    upTo30MB: (29.99 - 10.99) / (30 - 9.7),
-    upTo50MB: (49.99 - 29.99) / (50 - 30),
-  }
+  perPDFBase: 0.22,
+  perQuestionBase: 0.01925,
+  perMBBase: 0.06875,
 };
 
 // Currency conversion rates from EUR

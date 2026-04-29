@@ -56,28 +56,80 @@ export function Pricing({ showHeader = true }: PricingProps) {
     return priceObj[currency] || priceObj["EUR"];
   };
 
+  // const calculateCustomPrice = () => {
+  //   const rate = currencyConversionRates[currency] || 1;
+
+  //   const pdfPrice = customPDFs * customPricingRates.perPDFBase * rate;
+  //   const questionPrice = customQuestions * customPricingRates.perQuestionBase * rate;
+  //   const sizePrice = customSize * customPricingRates.perMBBase * rate;
+
+  //   let total = pdfPrice + questionPrice + sizePrice;
+  //   if (apiAccess) total *= 1.1;
+
+  //   return total;
+  // };
+
   const calculateCustomPrice = () => {
-    const rate = currencyConversionRates[currency] || 1;
-    const perPDFPrice = customPricingRates.perPDFBase * rate;
-    const perQuestionPrice = customPricingRates.perQuestionBase * rate;
-
-    let pdfPrice = customPDFs * perPDFPrice;
-    let questionPrice = customQuestions * perQuestionPrice;
-    let sizePrice = 0;
-
-    if (customSize <= 9.7) {
-      sizePrice = customSize * customPricingRates.sizePrice.upTo9MB * rate;
-    } else if (customSize <= 30) {
-      sizePrice = (9.7 * customPricingRates.sizePrice.upTo9MB + (customSize - 9.7) * customPricingRates.sizePrice.upTo30MB) * rate;
-    } else if (customSize <= 50) {
-      sizePrice = (9.7 * customPricingRates.sizePrice.upTo9MB + 20.3 * customPricingRates.sizePrice.upTo30MB + (customSize - 30) * customPricingRates.sizePrice.upTo50MB) * rate;
-    } else {
-      sizePrice = (9.7 * customPricingRates.sizePrice.upTo9MB + 20.3 * customPricingRates.sizePrice.upTo30MB + 20 * customPricingRates.sizePrice.upTo50MB + (customSize - 50) * customPricingRates.sizePrice.upTo50MB) * rate;
+    const plans = pricingData.map((plan) => ({
+      docs: Number(plan.priceList[0].name.match(/\d+/)?.[0]),
+      size: Number(plan.priceList[1].name.match(/\d+/)?.[0]),
+      questions: Number(plan.priceList[2].name.match(/\d+/)?.[0]),
+      price: parseFloat(
+        (plan.priceMonthly as Record<string, string>)[currency] ||
+        (plan.priceMonthly as Record<string, string>)["EUR"]
+      ),
+    }));
+  
+    // между тарифами
+    for (let i = 0; i < plans.length - 1; i++) {
+      const current = plans[i];
+      const next = plans[i + 1];
+  
+      if (
+        customPDFs <= next.docs &&
+        customQuestions <= next.questions &&
+        customSize <= next.size
+      ) {
+        const progressDocs =
+          (customPDFs - current.docs) / (next.docs - current.docs);
+  
+        const progressQuestions =
+          (customQuestions - current.questions) /
+          (next.questions - current.questions);
+  
+        const progressSize =
+          (customSize - current.size) /
+          (next.size - current.size);
+  
+        const progress = Math.max(
+          0,
+          Math.min(
+            1,
+            (progressDocs + progressQuestions + progressSize) / 3
+          )
+        );
+  
+        let total =
+          current.price +
+          (next.price - current.price) * progress;
+  
+        if (apiAccess) total *= 1.1;
+  
+        return total;
+      }
     }
-
-    let total = pdfPrice + questionPrice + sizePrice;
+  
+    // выше последнего тарифа
+    const last = plans[plans.length - 1];
+  
+    let total =
+      last.price +
+      (customPDFs - last.docs) * 0.5 +
+      (customQuestions - last.questions) * 0.02 +
+      (customSize - last.size) * 0.2;
+  
     if (apiAccess) total *= 1.1;
-
+  
     return total;
   };
 
@@ -200,7 +252,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 </label>
                 <input
                   type="range"
-                  min="1"
+                  min="5"
                   max="300"
                   value={customPDFs}
                   onChange={(e) => setCustomPDFs(Number(e.target.value))}
@@ -215,7 +267,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 </label>
                 <input
                   type="range"
-                  min="10"
+                  min="50"
                   max="3000"
                   step="10"
                   value={customQuestions}
@@ -231,7 +283,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 </label>
                 <input
                   type="range"
-                  min="1"
+                  min="10"
                   max="100"
                   value={customSize}
                   onChange={(e) => setCustomSize(Number(e.target.value))}
