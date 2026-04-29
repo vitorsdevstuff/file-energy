@@ -260,6 +260,54 @@ ${resetUrl}
 This link expires in 1 hour. If you didn't request this, you can ignore this email.`;
 }
 
+interface RenderContactAutoReplyHtmlParams {
+  firstName: string;
+  subject: string;
+}
+
+function renderContactAutoReplyHtml({
+  firstName,
+  subject,
+}: RenderContactAutoReplyHtmlParams): string {
+  return `<!doctype html>
+<html>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; margin: 0; padding: 32px;">
+    <table role="presentation" width="100%" style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <tr>
+        <td>
+          <h1 style="margin: 0 0 16px; color: #111827; font-size: 22px;">Thank you for contacting us</h1>
+          <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.6;">
+            Hi ${escapeHtml(firstName)},
+          </p>
+          <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.6;">
+            We have received your message regarding "<strong>${escapeHtml(subject)}</strong>" and our team will get back to you as soon as possible.
+          </p>
+          <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+            This is an automated response. Please do not reply directly to this email.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function renderContactAutoReplyText({
+  firstName,
+  subject,
+}: RenderContactAutoReplyHtmlParams): string {
+  return `Hi ${firstName},
+
+Thank you for reaching out to us. We have received your message regarding "${subject}" and our team will get back to you as soon as possible.
+
+Best regards,
+The File.energy Team
+
+This is an automated response. Please do not reply directly to this email.`;
+}
+
+export { renderContactAutoReplyHtml, renderContactAutoReplyText };
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")

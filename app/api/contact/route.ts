@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, renderContactAutoReplyHtml, renderContactAutoReplyText } from "@/lib/email";
 import { z } from "zod";
 
 const contactSchema = z.object({
@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
     const autoReplyResult = await sendEmail({
       to: data.email,
       subject: "Thank you for contacting File.energy",
-      text: `Hi ${data.firstName},\n\nThank you for reaching out to us. We have received your message regarding "${data.subject}" and our team will get back to you as soon as possible.\n\nBest regards,\nThe File.energy Team`,
-      html: `<p>Hi ${data.firstName},</p><p>Thank you for reaching out to us. We have received your message regarding "<strong>${data.subject}</strong>" and our team will get back to you as soon as possible.</p><p>Best regards,<br/>The File.energy Team</p>`,
+      text: renderContactAutoReplyText({ firstName: data.firstName, subject: data.subject }),
+      html: renderContactAutoReplyHtml({ firstName: data.firstName, subject: data.subject }),
     });
 
     if (!autoReplyResult.ok) {
