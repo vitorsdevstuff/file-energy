@@ -11,6 +11,48 @@ function getResend(): Resend | null {
   return resendClient;
 }
 
+interface SendEmailParams {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}
+
+export async function sendEmail({
+  to,
+  subject,
+  text,
+  html,
+}: SendEmailParams): Promise<{ ok: boolean; error?: string }> {
+  const client = getResend();
+  if (!client) {
+    console.warn(`[email] RESEND_API_KEY not set — would send to ${to}: ${subject}`);
+    return { ok: true };
+  }
+
+  try {
+    const { error } = await client.emails.send({
+      from: EMAIL_FROM,
+      to,
+      subject,
+      html,
+      text,
+    });
+
+    if (error) {
+      console.error("[email] Resend returned error:", error);
+      return { ok: false, error: error.message };
+    }
+    return { ok: true };
+  } catch (err) {
+    console.error("[email] Failed to send email:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+}
+
 export function getBaseUrl(): string {
   return process.env.NEXT_PUBLIC_BASE_URL || "https://file.energy";
 }

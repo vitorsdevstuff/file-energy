@@ -2,24 +2,56 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, MapPin, Send, Building2, Globe } from "lucide-react";
 import toast from "react-hot-toast";
 
+const contactSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Please enter a valid email"),
+  subject: z.string().min(1, "Subject is required"),
+  message: z.string().min(1, "Message is required"),
+});
+
+type ContactForm = z.infer<typeof contactSchema>;
+
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ContactForm>({
+    resolver: zodResolver(contactSchema),
+  });
+
+  const onSubmit = async (data: ContactForm) => {
     setIsSubmitting(true);
-
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    toast.success("Message sent successfully! We'll get back to you soon.");
-    setIsSubmitting(false);
-    (e.target as HTMLFormElement).reset();
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.error || "Something went wrong. Please try again.");
+        return;
+      }
+      toast.success("Message sent successfully! We'll get back to you soon.");
+      reset();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -61,19 +93,27 @@ export default function ContactPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     First Name
                   </label>
-                  <Input placeholder="John" required />
+                  <Input
+                    placeholder="John"
+                    {...register("firstName")}
+                    error={errors.firstName?.message}
+                  />
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Last Name
                   </label>
-                  <Input placeholder="Doe" required />
+                  <Input
+                    placeholder="Doe"
+                    {...register("lastName")}
+                    error={errors.lastName?.message}
+                  />
                 </div>
               </div>
 
@@ -81,14 +121,23 @@ export default function ContactPage() {
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email
                 </label>
-                <Input type="email" placeholder="john@example.com" required />
+                <Input
+                  type="email"
+                  placeholder="john@example.com"
+                  {...register("email")}
+                  error={errors.email?.message}
+                />
               </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Subject
                 </label>
-                <Input placeholder="How can we help?" required />
+                <Input
+                  placeholder="How can we help?"
+                  {...register("subject")}
+                  error={errors.subject?.message}
+                />
               </div>
 
               <div>
@@ -98,9 +147,18 @@ export default function ContactPage() {
                 <textarea
                   rows={5}
                   placeholder="Your message..."
-                  required
-                  className="flex w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm transition-colors placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:placeholder:text-gray-500"
+                  {...register("message")}
+                  className={`flex w-full rounded-lg border bg-white px-4 py-3 text-sm transition-colors placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:bg-gray-900 dark:placeholder:text-gray-500 ${
+                    errors.message
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-200 dark:border-gray-700"
+                  }`}
                 />
+                {errors.message && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.message.message}
+                  </p>
+                )}
               </div>
 
               <Button type="submit" className="w-full" isLoading={isSubmitting}>
