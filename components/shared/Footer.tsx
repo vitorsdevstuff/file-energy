@@ -16,7 +16,7 @@ export function Footer() {
             <p className="mb-6 max-w-xs text-sm text-gray-500 dark:text-gray-400">
               {footerData.footerText}
             </p>
-            <div className="flex gap-4">
+            {/* <div className="flex gap-4">
               <a
                 href="#"
                 className="text-gray-400 transition-colors hover:text-primary"
@@ -38,7 +38,7 @@ export function Footer() {
               >
                 <Linkedin className="h-5 w-5" />
               </a>
-            </div>
+            </div> */}
           </div>
 
           {/* Explore */}
