@@ -62,9 +62,9 @@ export async function createPasswordResetToken(
   const expires = new Date(Date.now() + PASSWORD_RESET_TTL_HOURS * 60 * 60 * 1000);
 
   // Invalidate any pre-existing tokens for this email.
-  await prisma.passwordResetToken.delete({
+  await prisma.passwordResetToken.deleteMany({
     where: { email },
-  }).catch(() => {}); // Ignore if no token exists
+  });
 
   await prisma.passwordResetToken.create({
     data: { email, token, expires },
