@@ -79,6 +79,7 @@ model VerificationToken {
 model PasswordResetToken {
   email     String   @id
   token     String
+  expires   DateTime
   createdAt DateTime @default(now())
 
   @@map("password_reset_tokens")

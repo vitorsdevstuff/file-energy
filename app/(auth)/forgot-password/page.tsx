@@ -54,17 +54,17 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div>
-      <h2 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">
+    <div className="flex flex-col gap-6">
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
         Forgot password?
       </h2>
-      <p className="mb-8 text-gray-600 dark:text-gray-400">
+      <p className="text-gray-600 dark:text-gray-400">
         Enter your email address and we&apos;ll send you a link to reset your password.
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Email
           </label>
           <Input
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <Button type="submit" className="w-full" isLoading={isLoading}>
-          Reset password
+          Email me a reset link
         </Button>
       </form>
 
