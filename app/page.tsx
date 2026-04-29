@@ -1,7 +1,7 @@
 import { Hero } from "@/components/marketing/Hero";
 import { Clients } from "@/components/marketing/Clients";
 import { Features } from "@/components/marketing/Features";
-import { Testimonials } from "@/components/marketing/Testimonials";
+// import { Testimonials } from "@/components/marketing/Testimonials";
 import { Pricing } from "@/components/marketing/Pricing";
 import { FAQ } from "@/components/marketing/FAQ";
 import { CTA } from "@/components/marketing/CTA";
@@ -22,7 +22,7 @@ export default function HomePage() {
         <Hero />
         <Clients />
         <Features />
-        <Testimonials />
+        {/* <Testimonials /> */}
         <Pricing />
         <FAQ />
         <CTA />
