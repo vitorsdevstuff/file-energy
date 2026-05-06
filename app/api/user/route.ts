@@ -19,6 +19,9 @@ export async function GET() {
         username: true,
         avatar: true,
         role: true,
+        phone: true,
+        phoneVerifiedAt: true,
+        emailVerifiedAt: true,
         createdAt: true,
         subscriptions: {
           where: { status: "ACTIVE" },
@@ -48,6 +51,8 @@ export async function GET() {
   }
 }
 
+const PHONE_E164 = /^\+[1-9]\d{1,14}$/;
+
 const updateUserSchema = z.object({
   username: z.string().min(2).optional(),
   avatar: z.string().url().optional(),
@@ -55,6 +60,7 @@ const updateUserSchema = z.object({
   city: z.string().optional(),
   country: z.string().optional(),
   postcode: z.string().optional(),
+  phone: z.string().regex(PHONE_E164, "Phone must be in E.164 format").optional().nullable(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -68,9 +74,16 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const data = updateUserSchema.parse(body);
 
+    // If phone is being changed, reset phone verification
+    const updateData: Record<string, unknown> = { ...data };
+    if ("phone" in data) {
+      updateData.phoneVerifiedAt = null;
+      updateData.phoneVerificationSentAt = null;
+    }
+
     const user = await prisma.user.update({
       where: { id: session.user.id },
-      data,
+      data: updateData,
       select: {
         id: true,
         email: true,
@@ -80,6 +93,8 @@ export async function PATCH(req: NextRequest) {
         city: true,
         country: true,
         postcode: true,
+        phone: true,
+        phoneVerifiedAt: true,
       },
     });
 

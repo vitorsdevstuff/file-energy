@@ -53,6 +53,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.username,
           role: user.role,
           isEmailVerified: user.emailVerifiedAt !== null,
+          isPhoneVerified: user.phoneVerifiedAt !== null,
         };
       },
     }),
@@ -63,17 +64,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = user.role;
         token.isEmailVerified = user.isEmailVerified;
+        token.isPhoneVerified = user.isPhoneVerified;
       }
 
-      // Refresh isEmailVerified from the DB on explicit session updates —
-      // this lets the UI pick up a newly verified email without a re-login.
+      // Refresh verification status from the DB on explicit session updates —
+      // this lets the UI pick up newly verified email/phone without a re-login.
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { emailVerifiedAt: true },
+          select: { emailVerifiedAt: true, phoneVerifiedAt: true },
         });
         if (dbUser) {
           token.isEmailVerified = dbUser.emailVerifiedAt !== null;
+          token.isPhoneVerified = dbUser.phoneVerifiedAt !== null;
         }
       }
 
@@ -84,6 +87,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.isEmailVerified = Boolean(token.isEmailVerified);
+        session.user.isPhoneVerified = Boolean(token.isPhoneVerified);
       }
       return session;
     },

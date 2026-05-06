@@ -40,7 +40,7 @@ export function Navbar() {
       )}
     >
       <nav className="container mx-auto flex h-20 items-center justify-between px-4">
-        <Logo />
+        <Logo variant="dark" />
 
         {/* Desktop Navigation */}
         <div className="hidden items-center gap-8 md:flex">

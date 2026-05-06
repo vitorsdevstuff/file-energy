@@ -72,6 +72,34 @@ export async function notifyEmailVerified({
   return sendTelegramMessage(text);
 }
 
+export async function notifyPhoneVerificationStarted({
+  email,
+  phone,
+}: {
+  email: string;
+  phone: string;
+}): Promise<SendResult> {
+  const text =
+    `📱 <b>[${SITE_NAME}] Phone verification started</b>\n` +
+    `Email: ${escapeHtml(email)}\n` +
+    `Phone: ${escapeHtml(phone)}`;
+  return sendTelegramMessage(text);
+}
+
+export async function notifyPhoneVerified({
+  email,
+  phone,
+}: {
+  email: string;
+  phone: string;
+}): Promise<SendResult> {
+  const text =
+    `✅ <b>[${SITE_NAME}] Phone verified</b>\n` +
+    `Email: ${escapeHtml(email)}\n` +
+    `Phone: ${escapeHtml(phone)}`;
+  return sendTelegramMessage(text);
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")

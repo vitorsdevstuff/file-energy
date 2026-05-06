@@ -9,6 +9,7 @@ declare module "next-auth" {
       name: string;
       role: string;
       isEmailVerified: boolean;
+      isPhoneVerified: boolean;
     };
   }
 
@@ -16,6 +17,7 @@ declare module "next-auth" {
     id: string;
     role: string;
     isEmailVerified?: boolean;
+    isPhoneVerified?: boolean;
   }
 }
 
@@ -24,6 +26,7 @@ declare module "@auth/core/jwt" {
     id: string;
     role: string;
     isEmailVerified?: boolean;
+    isPhoneVerified?: boolean;
   }
 }
 

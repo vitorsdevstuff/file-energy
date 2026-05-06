@@ -8,7 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
-import { Check, Shield, ArrowLeft, Loader2, MailWarning } from "lucide-react";
+import { Check, Shield, ArrowLeft, Loader2, MailWarning, Phone } from "lucide-react";
 import { pricingData } from "@/lib/data";
 import {
   CURRENCY_INFO,
@@ -33,6 +33,7 @@ function CheckoutContent() {
   const { currency: globalCurrency } = useCurrency();
   const { data: session, status: sessionStatus } = useSession();
   const isEmailVerified = session?.user?.isEmailVerified ?? false;
+  const isPhoneVerified = session?.user?.isPhoneVerified ?? false;
   const isSessionLoading = sessionStatus === "loading";
   const [isResendingEmail, setIsResendingEmail] = useState(false);
 
@@ -133,7 +134,8 @@ function CheckoutContent() {
     digitalServiceAccepted &&
     hasValidPlan &&
     isLoggedIn &&
-    isEmailVerified;
+    isEmailVerified &&
+    isPhoneVerified;
 
   const handlePayment = async () => {
     if (!canPay) return;
@@ -295,6 +297,31 @@ function CheckoutContent() {
               >
                 {isResendingEmail ? "Sending…" : "Resend verification email"}
               </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Phone verification banner */}
+        {!isSessionLoading && isLoggedIn && isEmailVerified && !isPhoneVerified && (
+          <motion.div
+            className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Phone className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="flex-1 text-sm">
+              <p className="font-medium text-amber-900 dark:text-amber-100">
+                Verify your phone number to continue
+              </p>
+              <p className="mt-1 text-amber-800 dark:text-amber-200">
+                You need to verify your phone number before making a purchase.
+              </p>
+              <Link
+                href="/account/settings"
+                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-amber-900 underline hover:text-amber-700 dark:text-amber-100 dark:hover:text-amber-300"
+              >
+                Go to account settings to verify your phone
+              </Link>
             </div>
           </motion.div>
         )}

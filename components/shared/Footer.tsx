@@ -12,7 +12,7 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Logo className="mb-4" />
+            <Logo variant="dark" className="mb-4" />
             <p className="mb-6 max-w-xs text-sm text-gray-500 dark:text-gray-400">
               {footerData.footerText}
             </p>

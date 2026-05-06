@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { SettingsForm } from "./SettingsForm";
+import { PhoneVerification } from "./PhoneVerification";
 
 export const metadata = {
   title: "Profile Settings",
@@ -24,6 +25,9 @@ export default async function SettingsPage() {
       city: true,
       country: true,
       postcode: true,
+      phone: true,
+      phoneVerifiedAt: true,
+      emailVerifiedAt: true,
     },
   });
 
@@ -44,6 +48,11 @@ export default async function SettingsPage() {
         </div>
 
         <SettingsForm user={user} />
+        <PhoneVerification
+          phone={user.phone}
+          phoneVerifiedAt={user.phoneVerifiedAt}
+          emailVerifiedAt={user.emailVerifiedAt}
+        />
       </div>
     </div>
   );

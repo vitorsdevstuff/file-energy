@@ -8,7 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
-import { User, MapPin, ArrowLeft } from "lucide-react";
+import { User, MapPin, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 const profileSchema = z.object({
@@ -31,6 +31,9 @@ interface SettingsFormProps {
     city: string | null;
     country: string | null;
     postcode: string | null;
+    phone: string | null;
+    phoneVerifiedAt: Date | null;
+    emailVerifiedAt: Date | null;
   };
 }
 
@@ -99,8 +102,19 @@ export function SettingsForm({ user }: SettingsFormProps) {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   Email
+                  {user.emailVerifiedAt ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Verified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      Not verified
+                    </span>
+                  )}
                 </label>
                 <Input
                   type="email"
