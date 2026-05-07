@@ -4,15 +4,18 @@ import Link from "next/link";
 import { Logo } from "./Logo";
 import { footerData } from "@/lib/data";
 import { Github, Twitter, Linkedin } from "lucide-react";
+import { useThemeVariant } from "./useThemeVariant";
 
 export function Footer() {
+  const logoVariant = useThemeVariant();
+
   return (
     <footer className="border-t border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-16">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Logo variant="dark" className="mb-4" />
+            <Logo variant={logoVariant} className="mb-4" />
             <p className="mb-6 max-w-xs text-sm text-gray-500 dark:text-gray-400">
               {footerData.footerText}
             </p>

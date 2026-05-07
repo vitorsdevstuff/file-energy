@@ -12,12 +12,14 @@ import { CurrencySwitcher } from "./CurrencySwitcher";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { menuData } from "@/lib/data";
+import { useThemeVariant } from "./useThemeVariant";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
+  const logoVariant = useThemeVariant();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,7 +42,7 @@ export function Navbar() {
       )}
     >
       <nav className="container mx-auto flex h-20 items-center justify-between px-4">
-        <Logo variant="dark" />
+        <Logo variant={logoVariant} />
 
         {/* Desktop Navigation */}
         <div className="hidden items-center gap-8 md:flex">
