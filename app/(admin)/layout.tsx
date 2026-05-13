@@ -22,8 +22,9 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  // Check if user is admin (you'd check this from the database)
-  // For now, we'll assume any logged-in user can access for demo
+  if (session.user.role !== "ADMIN") {
+    redirect("/");
+  }
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
