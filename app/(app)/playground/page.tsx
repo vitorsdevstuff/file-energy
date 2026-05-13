@@ -42,7 +42,7 @@ export default async function PlaygroundPage() {
   const subscription = user.subscriptions[0] || null;
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-[calc(100vh-80px)] bg-gray-50 dark:bg-gray-950">
       <ChatSidebar
         chats={user.chats}
         user={{
