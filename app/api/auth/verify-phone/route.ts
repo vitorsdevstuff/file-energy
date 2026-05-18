@@ -73,15 +73,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // Update user phone and reset verification state
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: {
-      phone,
-      phoneVerifiedAt: null,
-      phoneVerificationSentAt: null,
-    },
-  });
+  if (!isPreludeConfigured()) {
+    return NextResponse.json(
+      { error: "SMS service is not configured. Please contact support." },
+      { status: 503 }
+    );
+  }
 
   // Create a job record for tracking the Prelude API call
   const job = await prisma.job.create({
@@ -98,20 +95,6 @@ export async function POST(req: Request) {
     data: { status: "PROCESSING" },
   });
 
-  if (!isPreludeConfigured()) {
-    await prisma.job.update({
-      where: { id: job.id },
-      data: {
-        status: "FAILED",
-        error: "PRELUDE_API_KEY not configured",
-      },
-    });
-    return NextResponse.json(
-      { error: "SMS service is not configured. Please contact support." },
-      { status: 503 }
-    );
-  }
-
   const result = await sendPhoneVerification({
     phone,
     correlationId: session.user.id,
@@ -125,13 +108,14 @@ export async function POST(req: Request) {
         error: result.error || "Unknown error",
       },
     });
+    console.error("[verify-phone] Prelude send failed:", result.error);
     return NextResponse.json(
       { error: "Failed to send verification code. Please try again." },
       { status: 502 }
     );
   }
 
-  // Success: update job and user
+  // Success: save phone and update timestamps
   await prisma.job.update({
     where: { id: job.id },
     data: {
@@ -140,9 +124,14 @@ export async function POST(req: Request) {
     },
   });
 
+  // Only persist phone + sentAt after successful SMS dispatch
   await prisma.user.update({
     where: { id: session.user.id },
-    data: { phoneVerificationSentAt: new Date() },
+    data: {
+      phone,
+      phoneVerifiedAt: null,
+      phoneVerificationSentAt: new Date(),
+    },
   });
 
   // Fire-and-forget Telegram notification

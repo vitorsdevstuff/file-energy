@@ -27,6 +27,7 @@ export default async function SettingsPage() {
       postcode: true,
       phone: true,
       phoneVerifiedAt: true,
+      phoneVerificationSentAt: true,
       emailVerifiedAt: true,
     },
   });
@@ -51,7 +52,7 @@ export default async function SettingsPage() {
         <PhoneVerification
           phone={user.phone}
           phoneVerifiedAt={user.phoneVerifiedAt}
-          emailVerifiedAt={user.emailVerifiedAt}
+          phoneVerificationSentAt={user.phoneVerificationSentAt}
         />
       </div>
     </div>
