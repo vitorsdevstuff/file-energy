@@ -48,11 +48,15 @@ export default async function SettingsPage() {
           </p>
         </div>
 
-        <SettingsForm user={user} />
-        <PhoneVerification
-          phone={user.phone}
-          phoneVerifiedAt={user.phoneVerifiedAt}
-          phoneVerificationSentAt={user.phoneVerificationSentAt}
+        <SettingsForm
+          user={user}
+          phoneVerification={
+            <PhoneVerification
+              phone={user.phone}
+              phoneVerifiedAt={user.phoneVerifiedAt}
+              phoneVerificationSentAt={user.phoneVerificationSentAt}
+            />
+          }
         />
       </div>
     </div>

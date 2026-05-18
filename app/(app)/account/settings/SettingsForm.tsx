@@ -35,9 +35,10 @@ interface SettingsFormProps {
     phoneVerifiedAt: Date | null;
     emailVerifiedAt: Date | null;
   };
+  phoneVerification: React.ReactNode;
 }
 
-export function SettingsForm({ user }: SettingsFormProps) {
+export function SettingsForm({ user, phoneVerification }: SettingsFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -178,6 +179,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
           </div>
         </form>
       </div>
+
+      {phoneVerification}
 
       {/* Danger Zone */}
       <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950">

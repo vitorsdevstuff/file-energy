@@ -20,6 +20,7 @@ interface PhoneVerificationProps {
 
 const CODE_COOLDOWN = 30;
 const CODE_EXPIRY = 60;
+const MAX_ATTEMPTS = 3;
 
 export function PhoneVerification({
   phone,
@@ -32,6 +33,7 @@ export function PhoneVerification({
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isChangingPhone, setIsChangingPhone] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
   const [cooldown, setCooldown] = useState(0);
 
@@ -51,6 +53,8 @@ export function PhoneVerification({
     return phone || phoneInput.trim();
   }, [phone, phoneInput]);
 
+  const isLockedOut = failedAttempts >= MAX_ATTEMPTS;
+
   /**
    * DERIVED STEP
    */
@@ -59,15 +63,10 @@ export function PhoneVerification({
 
     if (isVerified) return "idle";
 
-    if (currentPhone && codeExpiry > 0) {
-      return "enter-code";
-    }
+    // Stay on code entry while phone is set (even if code expired)
+    if (currentPhone) return "enter-code";
 
-    if (!currentPhone) {
-      return "idle";
-    }
-
-    return "enter-phone";
+    return "idle";
   })();
 
   /**
@@ -126,6 +125,7 @@ export function PhoneVerification({
       setCooldown(CODE_COOLDOWN);
       setCodeExpiry(CODE_EXPIRY);
       setCodeInput("");
+      setFailedAttempts(0);
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -184,6 +184,10 @@ export function PhoneVerification({
           return;
         }
 
+        if (data.code === "INVALID_CODE") {
+          setFailedAttempts((a) => a + 1);
+        }
+
         throw new Error(data.error || "Invalid code");
       }
 
@@ -214,6 +218,7 @@ export function PhoneVerification({
     setCodeInput("");
     setCodeExpiry(0);
     setCooldown(0);
+    setFailedAttempts(0);
   };
 
   const handleCancelChange = () => {
@@ -307,71 +312,89 @@ export function PhoneVerification({
             <strong>{currentPhone}</strong>
           </p>
 
-          {codeExpiry > 0 ? (
-            <p className="mb-4 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-              <Clock className="h-3 w-3" />
-              Code expires in {codeExpiry}s
-            </p>
+          {isLockedOut ? (
+            <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 dark:bg-red-950/40">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+              <p className="text-sm text-red-700 dark:text-red-300">
+                You&apos;ve entered the wrong code too many times.{" "}
+                <a
+                  href="/contact"
+                  className="underline hover:text-red-800 dark:hover:text-red-200"
+                >
+                  Contact support
+                </a>{" "}
+                for assistance.
+              </p>
+            </div>
           ) : (
-            <p className="mb-4 text-xs text-red-500">
-              Code has expired. Request a new one below.
-            </p>
+            <>
+              {codeExpiry > 0 ? (
+                <p className="mb-4 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                  <Clock className="h-3 w-3" />
+                  Code expires in {codeExpiry}s
+                </p>
+              ) : (
+                <p className="mb-4 text-xs text-red-500">
+                  Code has expired. Request a new one below.
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  placeholder="1234"
+                  value={codeInput}
+                  onChange={(e) =>
+                    setCodeInput(
+                      e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 4)
+                    )
+                  }
+                  className="max-w-[120px]"
+                />
+
+                <Button
+                  onClick={handleVerifyCode}
+                  isLoading={isVerifying}
+                  disabled={
+                    codeInput.length !== 4 ||
+                    codeExpiry <= 0
+                  }
+                >
+                  Verify
+                </Button>
+              </div>
+
+              <div className="mt-3 flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResend}
+                  isLoading={
+                    isSending && cooldown <= 0
+                  }
+                  disabled={cooldown > 0}
+                >
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+
+                  {cooldown > 0
+                    ? `Resend in ${cooldown}s`
+                    : "Resend code"}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleChangePhone}
+                >
+                  Change phone
+                </Button>
+              </div>
+            </>
           )}
-
-          <div className="flex gap-3">
-            <Input
-              type="text"
-              inputMode="numeric"
-              maxLength={4}
-              placeholder="1234"
-              value={codeInput}
-              onChange={(e) =>
-                setCodeInput(
-                  e.target.value
-                    .replace(/\D/g, "")
-                    .slice(0, 4)
-                )
-              }
-              className="max-w-[120px]"
-            />
-
-            <Button
-              onClick={handleVerifyCode}
-              isLoading={isVerifying}
-              disabled={
-                codeInput.length !== 4 ||
-                codeExpiry <= 0
-              }
-            >
-              Verify
-            </Button>
-          </div>
-
-          <div className="mt-3 flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleResend}
-              isLoading={
-                isSending && cooldown <= 0
-              }
-              disabled={cooldown > 0}
-            >
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-
-              {cooldown > 0
-                ? `Resend in ${cooldown}s`
-                : "Resend code"}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleChangePhone}
-            >
-              Change phone
-            </Button>
-          </div>
         </div>
       )}
 
