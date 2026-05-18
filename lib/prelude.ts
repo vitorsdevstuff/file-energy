@@ -3,6 +3,7 @@ const PRELUDE_BASE_URL = "https://api.prelude.dev/v2";
 
 interface PreludeResponse {
   ok: boolean;
+  status?: number;
   data?: Record<string, unknown>;
   error?: string;
 }
@@ -28,8 +29,10 @@ async function preludeRequest(
     return { ok: true };
   }
 
+  const url = `${PRELUDE_BASE_URL}${path}`;
+
   try {
-    const res = await fetch(`${PRELUDE_BASE_URL}${path}`, {
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -41,15 +44,16 @@ async function preludeRequest(
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const message =
-        (data as Record<string, string>).message ||
-        (data as Record<string, string>).code ||
-        `HTTP ${res.status}`;
-      console.error("[prelude] API error:", res.status, message);
-      return { ok: false, error: message };
+      const errorBody = data as Record<string, string>;
+      const message = errorBody.message || errorBody.code || `HTTP ${res.status}`;
+      const errorType = errorBody.type || "unknown";
+      console.error(
+        `[prelude] API error: ${res.status} ${res.statusText} — type=${errorType} message=${message} body=${JSON.stringify(data)}`
+      );
+      return { ok: false, status: res.status, error: `${message} (${errorType})` };
     }
 
-    return { ok: true, data: data as Record<string, unknown> };
+    return { ok: true, status: res.status, data: data as Record<string, unknown> };
   } catch (err) {
     console.error("[prelude] Request failed:", err);
     return {
@@ -70,6 +74,8 @@ export async function sendPhoneVerification({
     },
     options: {
       method: "message",
+      preferred_channel: "sms",
+      code_size: 4,
     },
     ...(correlationId && {
       metadata: { correlation_id: correlationId },

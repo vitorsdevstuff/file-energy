@@ -108,9 +108,9 @@ export async function POST(req: Request) {
         error: result.error || "Unknown error",
       },
     });
-    console.error("[verify-phone] Prelude send failed:", result.error);
+    console.error("[verify-phone] Prelude send failed:", result.status, result.error);
     return NextResponse.json(
-      { error: "Failed to send verification code. Please try again." },
+      { error: "Failed to send verification code. Please try again.", detail: result.error },
       { status: 502 }
     );
   }

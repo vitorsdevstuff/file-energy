@@ -101,8 +101,9 @@ export async function POST(req: Request) {
         error: result.error || "Verification check failed",
       },
     });
+    console.error("[verify-phone/confirm] Prelude check failed:", result.status, result.error);
     return NextResponse.json(
-      { error: "Failed to verify code. Please try again." },
+      { error: "Failed to verify code. Please try again.", detail: result.error },
       { status: 502 }
     );
   }
