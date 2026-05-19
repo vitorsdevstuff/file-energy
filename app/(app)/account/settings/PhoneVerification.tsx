@@ -21,6 +21,7 @@ interface PhoneVerificationProps {
 const CODE_COOLDOWN = 30;
 const CODE_EXPIRY = 60;
 const MAX_ATTEMPTS = 3;
+const MAX_RESENDS = 3;
 
 export function PhoneVerification({
   phone,
@@ -34,6 +35,7 @@ export function PhoneVerification({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isChangingPhone, setIsChangingPhone] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
+  const [resendCount, setResendCount] = useState(0);
 
   const [cooldown, setCooldown] = useState(0);
 
@@ -54,16 +56,13 @@ export function PhoneVerification({
   }, [phone, phoneInput]);
 
   const isLockedOut = failedAttempts >= MAX_ATTEMPTS;
+  const resendExhausted = resendCount >= MAX_RESENDS;
 
-  /**
-   * DERIVED STEP
-   */
   const step: "idle" | "enter-phone" | "enter-code" = (() => {
     if (isChangingPhone) return "enter-phone";
 
     if (isVerified) return "idle";
 
-    // Stay on code entry while phone is set (even if code expired)
     if (currentPhone) return "enter-code";
 
     return "idle";
@@ -126,6 +125,7 @@ export function PhoneVerification({
       setCodeExpiry(CODE_EXPIRY);
       setCodeInput("");
       setFailedAttempts(0);
+      setIsChangingPhone(false);
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -206,8 +206,9 @@ export function PhoneVerification({
   };
 
   const handleResend = async () => {
-    if (!currentPhone) return;
+    if (!currentPhone || resendExhausted) return;
 
+    setResendCount((c) => c + 1);
     await handleSendCode(currentPhone);
   };
 
@@ -219,6 +220,7 @@ export function PhoneVerification({
     setCodeExpiry(0);
     setCooldown(0);
     setFailedAttempts(0);
+    setResendCount(0);
   };
 
   const handleCancelChange = () => {
@@ -313,19 +315,30 @@ export function PhoneVerification({
           </p>
 
           {isLockedOut ? (
-            <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 dark:bg-red-950/40">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-              <p className="text-sm text-red-700 dark:text-red-300">
-                You&apos;ve entered the wrong code too many times.{" "}
-                <a
-                  href="/contact"
-                  className="underline hover:text-red-800 dark:hover:text-red-200"
-                >
-                  Contact support
-                </a>{" "}
-                for assistance.
-              </p>
-            </div>
+            <>
+              <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 dark:bg-red-950/40">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  You&apos;ve entered the wrong code too many times.{" "}
+                  <a
+                    href="/contact"
+                    className="underline hover:text-red-800 dark:hover:text-red-200"
+                  >
+                    Contact support
+                  </a>{" "}
+                  for assistance.
+                </p>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-3"
+                onClick={handleChangePhone}
+              >
+                Change phone
+              </Button>
+            </>
           ) : (
             <>
               {codeExpiry > 0 ? (
@@ -369,29 +382,41 @@ export function PhoneVerification({
               </div>
 
               <div className="mt-3 flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResend}
-                  isLoading={
-                    isSending && cooldown <= 0
-                  }
-                  disabled={cooldown > 0}
-                >
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                {resendExhausted ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleChangePhone}
+                  >
+                    Change phone
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResend}
+                    isLoading={
+                      isSending && cooldown <= 0
+                    }
+                    disabled={cooldown > 0}
+                  >
+                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
 
-                  {cooldown > 0
-                    ? `Resend in ${cooldown}s`
-                    : "Resend code"}
-                </Button>
+                    {cooldown > 0
+                      ? `Resend in ${cooldown}s`
+                      : "Resend code"}
+                  </Button>
+                )}
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleChangePhone}
-                >
-                  Change phone
-                </Button>
+                {!resendExhausted && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleChangePhone}
+                  >
+                    Change phone
+                  </Button>
+                )}
               </div>
             </>
           )}
