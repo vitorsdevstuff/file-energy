@@ -79,6 +79,8 @@ export async function PATCH(req: NextRequest) {
     if ("phone" in data) {
       updateData.phoneVerifiedAt = null;
       updateData.phoneVerificationSentAt = null;
+      updateData.phoneVerificationSendCount = 0;
+      updateData.phoneVerificationCodeAttempts = 0;
     }
 
     const user = await prisma.user.update({

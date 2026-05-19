@@ -12,6 +12,7 @@ const sendSchema = z.object({
 });
 
 const CODE_COOLDOWN_MS = 30_000;
+const MAX_SENDS = 3;
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -48,7 +49,12 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { phone: true, phoneVerifiedAt: true, phoneVerificationSentAt: true },
+    select: {
+      phone: true,
+      phoneVerifiedAt: true,
+      phoneVerificationSentAt: true,
+      phoneVerificationSendCount: true,
+    },
   });
 
   if (!user) {
@@ -57,6 +63,18 @@ export async function POST(req: Request) {
 
   if (user.phone === phone && user.phoneVerifiedAt) {
     return NextResponse.json({ error: "Phone number is already verified." }, { status: 400 });
+  }
+
+  // Check send limit for the same phone number
+  const phoneChanged = user.phone !== phone;
+  if (!phoneChanged && (user.phoneVerificationSendCount || 0) >= MAX_SENDS) {
+    return NextResponse.json(
+      {
+        error: "You've reached the maximum number of verification attempts for this phone number. Please try a different number.",
+        code: "SEND_LIMIT_REACHED",
+      },
+      { status: 429 }
+    );
   }
 
   // Rate limit: prevent spamming SMS
@@ -124,13 +142,16 @@ export async function POST(req: Request) {
     },
   });
 
-  // Only persist phone + sentAt after successful SMS dispatch
+  const newSendCount = phoneChanged ? 1 : (user.phoneVerificationSendCount || 0) + 1;
+
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
       phone,
       phoneVerifiedAt: null,
       phoneVerificationSentAt: new Date(),
+      phoneVerificationSendCount: newSendCount,
+      phoneVerificationCodeAttempts: 0,
     },
   });
 
@@ -139,5 +160,5 @@ export async function POST(req: Request) {
     (err) => console.error("[verify-phone] Telegram notification failed:", err)
   );
 
-  return NextResponse.json({ success: true, cooldown: CODE_COOLDOWN_MS });
+  return NextResponse.json({ success: true, cooldown: CODE_COOLDOWN_MS, sendCount: newSendCount });
 }

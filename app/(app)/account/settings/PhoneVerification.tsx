@@ -16,17 +16,21 @@ interface PhoneVerificationProps {
   phone: string | null;
   phoneVerifiedAt: Date | null;
   phoneVerificationSentAt: Date | null;
+  initialSendCount: number;
+  initialCodeAttempts: number;
 }
 
 const CODE_COOLDOWN = 30;
 const CODE_EXPIRY = 60;
-const MAX_ATTEMPTS = 3;
-const MAX_RESENDS = 3;
+const MAX_SENDS = 3;
+const MAX_CODE_ATTEMPTS = 3;
 
 export function PhoneVerification({
   phone,
   phoneVerifiedAt,
   phoneVerificationSentAt,
+  initialSendCount,
+  initialCodeAttempts,
 }: PhoneVerificationProps) {
   const [phoneInput, setPhoneInput] = useState(phone ?? "");
   const [codeInput, setCodeInput] = useState("");
@@ -34,8 +38,8 @@ export function PhoneVerification({
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isChangingPhone, setIsChangingPhone] = useState(false);
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [resendCount, setResendCount] = useState(0);
+  const [codeAttempts, setCodeAttempts] = useState(initialCodeAttempts);
+  const [sendCount, setSendCount] = useState(initialSendCount);
 
   const [cooldown, setCooldown] = useState(0);
 
@@ -55,8 +59,8 @@ export function PhoneVerification({
     return phone || phoneInput.trim();
   }, [phone, phoneInput]);
 
-  const isLockedOut = failedAttempts >= MAX_ATTEMPTS;
-  const resendExhausted = resendCount >= MAX_RESENDS;
+  const isLockedOut = codeAttempts >= MAX_CODE_ATTEMPTS;
+  const sendLimitReached = sendCount >= MAX_SENDS;
 
   const step: "idle" | "enter-phone" | "enter-code" = (() => {
     if (isChangingPhone) return "enter-phone";
@@ -116,6 +120,12 @@ export function PhoneVerification({
           return;
         }
 
+        if (data.code === "SEND_LIMIT_REACHED") {
+          setSendCount(MAX_SENDS);
+          toast.error(data.error);
+          return;
+        }
+
         throw new Error(data.error || "Failed to send verification code");
       }
 
@@ -124,7 +134,8 @@ export function PhoneVerification({
       setCooldown(CODE_COOLDOWN);
       setCodeExpiry(CODE_EXPIRY);
       setCodeInput("");
-      setFailedAttempts(0);
+      setCodeAttempts(0);
+      setSendCount(data.sendCount ?? (sendCount + 1));
       setIsChangingPhone(false);
     } catch (err) {
       toast.error(
@@ -135,7 +146,7 @@ export function PhoneVerification({
     } finally {
       setIsSending(false);
     }
-  }, []);
+  }, [sendCount]);
 
   const handleSubmitPhone = async () => {
     const trimmed = phoneInput.trim();
@@ -184,8 +195,14 @@ export function PhoneVerification({
           return;
         }
 
+        if (data.code === "TOO_MANY_ATTEMPTS") {
+          setCodeAttempts(MAX_CODE_ATTEMPTS);
+          toast.error(data.error);
+          return;
+        }
+
         if (data.code === "INVALID_CODE") {
-          setFailedAttempts((a) => a + 1);
+          setCodeAttempts(data.codeAttempts ?? MAX_CODE_ATTEMPTS);
         }
 
         throw new Error(data.error || "Invalid code");
@@ -206,9 +223,8 @@ export function PhoneVerification({
   };
 
   const handleResend = async () => {
-    if (!currentPhone || resendExhausted) return;
+    if (!currentPhone || sendLimitReached) return;
 
-    setResendCount((c) => c + 1);
     await handleSendCode(currentPhone);
   };
 
@@ -219,8 +235,8 @@ export function PhoneVerification({
     setCodeInput("");
     setCodeExpiry(0);
     setCooldown(0);
-    setFailedAttempts(0);
-    setResendCount(0);
+    setCodeAttempts(0);
+    setSendCount(0);
   };
 
   const handleCancelChange = () => {
@@ -229,6 +245,8 @@ export function PhoneVerification({
     setPhoneInput(phone ?? "");
     setCodeInput("");
     setCodeExpiry(0);
+    setCodeAttempts(initialCodeAttempts);
+    setSendCount(initialSendCount);
   };
 
   return (
@@ -330,14 +348,30 @@ export function PhoneVerification({
                 </p>
               </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-3"
-                onClick={handleChangePhone}
-              >
-                Change phone
-              </Button>
+              <div className="mt-3 flex items-center gap-3">
+                {!sendLimitReached && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResend}
+                    isLoading={isSending && cooldown <= 0}
+                    disabled={cooldown > 0}
+                  >
+                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                    {cooldown > 0
+                      ? `Resend in ${cooldown}s`
+                      : "Resend code"}
+                  </Button>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleChangePhone}
+                >
+                  Change phone
+                </Button>
+              </div>
             </>
           ) : (
             <>
@@ -382,40 +416,45 @@ export function PhoneVerification({
               </div>
 
               <div className="mt-3 flex items-center gap-3">
-                {resendExhausted ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleChangePhone}
-                  >
-                    Change phone
-                  </Button>
+                {sendLimitReached ? (
+                  <>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      No more resends available
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleChangePhone}
+                    >
+                      Change phone
+                    </Button>
+                  </>
                 ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResend}
-                    isLoading={
-                      isSending && cooldown <= 0
-                    }
-                    disabled={cooldown > 0}
-                  >
-                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResend}
+                      isLoading={
+                        isSending && cooldown <= 0
+                      }
+                      disabled={cooldown > 0}
+                    >
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
 
-                    {cooldown > 0
-                      ? `Resend in ${cooldown}s`
-                      : "Resend code"}
-                  </Button>
-                )}
+                      {cooldown > 0
+                        ? `Resend in ${cooldown}s`
+                        : "Resend code"}
+                    </Button>
 
-                {!resendExhausted && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleChangePhone}
-                  >
-                    Change phone
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleChangePhone}
+                    >
+                      Change phone
+                    </Button>
+                  </>
                 )}
               </div>
             </>

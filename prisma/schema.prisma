@@ -17,9 +17,11 @@ model User {
   city                      String?
   country                   String?
   postcode                  String?
-  phone                     String?        @unique
-  phoneVerifiedAt           DateTime?
-  phoneVerificationSentAt   DateTime?
+  phone                           String?        @unique
+  phoneVerifiedAt                 DateTime?
+  phoneVerificationSentAt         DateTime?
+  phoneVerificationSendCount      Int            @default(0)
+  phoneVerificationCodeAttempts   Int            @default(0)
   apiKey                    String?        @unique
   role                      Role           @default(USER)
   isActive                  Boolean        @default(false)

@@ -28,6 +28,8 @@ export default async function SettingsPage() {
       phone: true,
       phoneVerifiedAt: true,
       phoneVerificationSentAt: true,
+      phoneVerificationSendCount: true,
+      phoneVerificationCodeAttempts: true,
       emailVerifiedAt: true,
     },
   });
@@ -55,6 +57,8 @@ export default async function SettingsPage() {
               phone={user.phone}
               phoneVerifiedAt={user.phoneVerifiedAt}
               phoneVerificationSentAt={user.phoneVerificationSentAt}
+              initialSendCount={user.phoneVerificationSendCount}
+              initialCodeAttempts={user.phoneVerificationCodeAttempts}
             />
           }
         />

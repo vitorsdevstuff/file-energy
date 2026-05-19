@@ -6,6 +6,7 @@ import { checkPhoneVerification, isPreludeConfigured } from "@/lib/prelude";
 import { notifyPhoneVerified } from "@/lib/telegram";
 
 const CODE_EXPIRY_MS = 60_000; // 1 minute
+const MAX_CODE_ATTEMPTS = 3;
 
 const confirmSchema = z.object({
   code: z.string().length(4, "Code must be 4 digits").regex(/^\d+$/, "Code must be numeric"),
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { phone: true, phoneVerifiedAt: true, phoneVerificationSentAt: true, email: true },
+    select: { phone: true, phoneVerifiedAt: true, phoneVerificationSentAt: true, phoneVerificationCodeAttempts: true, email: true },
   });
 
   if (!user) {
@@ -52,6 +53,17 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Phone number is already verified." },
       { status: 400 }
+    );
+  }
+
+  // Check code attempt limit
+  if ((user.phoneVerificationCodeAttempts || 0) >= MAX_CODE_ATTEMPTS) {
+    return NextResponse.json(
+      {
+        error: "You've entered the wrong code too many times. Please request a new code or contact support.",
+        code: "TOO_MANY_ATTEMPTS",
+      },
+      { status: 429 }
     );
   }
 
@@ -123,17 +135,26 @@ export async function POST(req: Request) {
   }
 
   if (checkStatus === "failure" || checkStatus !== "success") {
+    // Increment code attempt counter
+    const newAttempts = (user.phoneVerificationCodeAttempts || 0) + 1;
+
     await prisma.job.update({
       where: { id: job.id },
       data: { status: "COMPLETED", result: JSON.stringify(checkData) },
     });
+
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { phoneVerificationCodeAttempts: newAttempts },
+    });
+
     return NextResponse.json(
-      { error: "Invalid verification code. Please try again.", code: "INVALID_CODE" },
+      { error: "Invalid verification code. Please try again.", code: "INVALID_CODE", codeAttempts: newAttempts },
       { status: 400 }
     );
   }
 
-  // Success: mark phone as verified
+  // Success: mark phone as verified and reset counters
   await prisma.job.update({
     where: { id: job.id },
     data: { status: "COMPLETED", result: JSON.stringify(checkData) },
@@ -144,6 +165,8 @@ export async function POST(req: Request) {
     data: {
       phoneVerifiedAt: new Date(),
       phoneVerificationSentAt: null,
+      phoneVerificationSendCount: 0,
+      phoneVerificationCodeAttempts: 0,
     },
   });
 
