@@ -43,7 +43,11 @@ export async function POST(req: NextRequest) {
     });
 
     // Fire-and-forget Telegram notification — never block registration on it.
-    notifyUserRegistered({ email, username }).catch((err) => {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      undefined;
+    notifyUserRegistered({ email, username, ip }).catch((err) => {
       console.error("[register] Telegram notification failed:", err);
     });
 

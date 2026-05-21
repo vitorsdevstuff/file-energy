@@ -50,14 +50,17 @@ const SITE_NAME = "File.energy";
 export async function notifyUserRegistered({
   email,
   username,
+  ip,
 }: {
   email: string;
   username: string;
+  ip?: string;
 }): Promise<SendResult> {
+  const ipLine = ip ? `\nIP: ${escapeHtml(ip)}` : "";
   const text =
     `🆕 <b>[${SITE_NAME}] New user registered</b>\n` +
     `Username: ${escapeHtml(username)}\n` +
-    `Email: ${escapeHtml(email)}`;
+    `Email: ${escapeHtml(email)}${ipLine}`;
   return sendTelegramMessage(text);
 }
 
