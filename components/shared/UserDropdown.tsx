@@ -73,7 +73,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
             className="flex w-full cursor-pointer"
           >
             <CreditCard className="mr-2 h-4 w-4" />
-            Subscription
+            My Plan
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

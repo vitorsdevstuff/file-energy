@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { User, CreditCard, Shield, Bell, LogOut } from "lucide-react";
+import { User, CreditCard, KeyRound, FileText, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata = {
@@ -40,9 +40,9 @@ export default async function AccountPage() {
 
   const menuItems = [
     { icon: User, label: "Profile Settings", href: "/account/settings" },
-    { icon: CreditCard, label: "Subscription", href: "/account/settings/subscription" },
-    { icon: Shield, label: "Security", href: "/account/settings/security" },
-    { icon: Bell, label: "Notifications", href: "/account/settings/notifications" },
+    { icon: CreditCard, label: "My Plan", href: "/account/settings/subscription" },
+    { icon: KeyRound, label: "Change Password", href: "/account/settings/password" },
+    { icon: FileText, label: "Invoices", href: "/account/settings/invoices" },
   ];
 
   return (
@@ -177,7 +177,7 @@ export default async function AccountPage() {
         {!subscription && (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-900 dark:bg-amber-950">
             <h3 className="mb-2 text-lg font-semibold text-amber-800 dark:text-amber-200">
-              No Active Subscription
+              No Active Plan
             </h3>
             <p className="mb-4 text-amber-700 dark:text-amber-300">
               Get started with a plan to upload documents and ask questions.

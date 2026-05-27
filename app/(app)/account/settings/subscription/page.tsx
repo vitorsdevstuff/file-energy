@@ -3,8 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Check, AlertTriangle } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { CreditCard, Check, AlertTriangle, ArrowLeft } from "lucide-react";
 
 export const metadata = {
   title: "Subscription",
@@ -24,11 +23,6 @@ export default async function SubscriptionPage() {
         orderBy: { createdAt: "desc" },
         include: { plan: true },
       },
-      invoices: {
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        include: { plan: true },
-      },
     },
   });
 
@@ -41,12 +35,21 @@ export default async function SubscriptionPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="container mx-auto max-w-4xl px-4 py-8">
+
+      <Link
+          href="/account"
+          className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Account
+        </Link>
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Subscription
+            My Plan
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Manage your subscription and billing
+            Manage your plan and billing
           </p>
         </div>
 
@@ -133,68 +136,6 @@ export default async function SubscriptionPage() {
           </div>
         )}
 
-        {/* Billing History */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Billing History
-          </h3>
-
-          {user.invoices.length === 0 ? (
-            <p className="text-gray-600 dark:text-gray-400">No billing history yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-100 dark:border-gray-800">
-                    <th className="pb-3 text-left text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Date
-                    </th>
-                    <th className="pb-3 text-left text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Plan
-                    </th>
-                    <th className="pb-3 text-left text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Amount
-                    </th>
-                    <th className="pb-3 text-left text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {user.invoices.map((invoice) => (
-                    <tr
-                      key={invoice.id}
-                      className="border-b border-gray-50 dark:border-gray-800"
-                    >
-                      <td className="py-3 text-sm text-gray-900 dark:text-white">
-                        {formatDate(invoice.createdAt)}
-                      </td>
-                      <td className="py-3 text-sm text-gray-900 dark:text-white">
-                        {invoice.plan.name}
-                      </td>
-                      <td className="py-3 text-sm text-gray-900 dark:text-white">
-                        ${invoice.amount.toFixed(2)} {invoice.currency}
-                      </td>
-                      <td className="py-3">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                            invoice.status === "PAID"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                              : invoice.status === "PENDING"
-                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                          }`}
-                        >
-                          {invoice.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
