@@ -32,13 +32,14 @@ interface SettingsFormProps {
     country: string | null;
     postcode: string | null;
     phone: string | null;
-    phoneVerifiedAt: Date | null;
+    // phoneVerifiedAt: Date | null;
     emailVerifiedAt: Date | null;
   };
-  phoneVerification: React.ReactNode;
+  // phoneVerification: React.ReactNode;
 }
 
-export function SettingsForm({ user, phoneVerification }: SettingsFormProps) {
+//export function SettingsForm({ user, phoneVerification }: SettingsFormProps) {
+export function SettingsForm({ user }: SettingsFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
