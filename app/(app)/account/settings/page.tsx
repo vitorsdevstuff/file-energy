@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { SettingsForm } from "./SettingsForm";
-import { PhoneVerification } from "./PhoneVerification";
+// import { PhoneVerification } from "./PhoneVerification";
 
 export const metadata = {
   title: "Profile Settings",
@@ -26,10 +26,10 @@ export default async function SettingsPage() {
       country: true,
       postcode: true,
       phone: true,
-      phoneVerifiedAt: true,
-      phoneVerificationSentAt: true,
-      phoneVerificationSendCount: true,
-      phoneVerificationCodeAttempts: true,
+      // phoneVerifiedAt: true,
+      // phoneVerificationSentAt: true,
+      // phoneVerificationSendCount: true,
+      // phoneVerificationCodeAttempts: true,
       emailVerifiedAt: true,
     },
   });
@@ -52,15 +52,15 @@ export default async function SettingsPage() {
 
         <SettingsForm
           user={user}
-          phoneVerification={
-            <PhoneVerification
-              phone={user.phone}
-              phoneVerifiedAt={user.phoneVerifiedAt}
-              phoneVerificationSentAt={user.phoneVerificationSentAt}
-              initialSendCount={user.phoneVerificationSendCount}
-              initialCodeAttempts={user.phoneVerificationCodeAttempts}
-            />
-          }
+          // phoneVerification={
+          //   <PhoneVerification
+          //     phone={user.phone}
+          //     phoneVerifiedAt={user.phoneVerifiedAt}
+          //     phoneVerificationSentAt={user.phoneVerificationSentAt}
+          //     initialSendCount={user.phoneVerificationSendCount}
+          //     initialCodeAttempts={user.phoneVerificationCodeAttempts}
+          //   />
+          // }
         />
       </div>
     </div>

@@ -180,7 +180,7 @@ export function SettingsForm({ user, phoneVerification }: SettingsFormProps) {
         </form>
       </div>
 
-      {phoneVerification}
+      {/* phoneVerification */}
 
       {/* Danger Zone */}
       <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950">

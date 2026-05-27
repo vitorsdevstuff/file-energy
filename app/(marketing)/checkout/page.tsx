@@ -134,8 +134,8 @@ function CheckoutContent() {
     digitalServiceAccepted &&
     hasValidPlan &&
     isLoggedIn &&
-    isEmailVerified &&
-    isPhoneVerified;
+    isEmailVerified;
+    // && isPhoneVerified;
 
   const handlePayment = async () => {
     if (!canPay) return;
@@ -301,8 +301,8 @@ function CheckoutContent() {
           </motion.div>
         )}
 
-        {/* Phone verification banner */}
-        {!isSessionLoading && isLoggedIn && isEmailVerified && !isPhoneVerified && (
+        {/* Phone verification banner — temporarily disabled */}
+        {/* !isSessionLoading && isLoggedIn && isEmailVerified && !isPhoneVerified && (
           <motion.div
             className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950"
             initial={{ opacity: 0, y: 10 }}
@@ -324,7 +324,7 @@ function CheckoutContent() {
               </Link>
             </div>
           </motion.div>
-        )}
+        ) */}
 
         {/* Not logged in banner */}
         {!isSessionLoading && !isLoggedIn && (

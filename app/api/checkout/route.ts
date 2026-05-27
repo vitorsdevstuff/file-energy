@@ -85,16 +85,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Phone must be verified before any payment can be created.
-    if (!user.phoneVerifiedAt) {
-      return NextResponse.json(
-        {
-          error:
-            "Please verify your phone number before making a purchase.",
-          code: "PHONE_NOT_VERIFIED",
-        },
-        { status: 403 }
-      );
-    }
+    // if (!user.phoneVerifiedAt) {
+    //   return NextResponse.json(
+    //     {
+    //       error:
+    //         "Please verify your phone number before making a purchase.",
+    //       code: "PHONE_NOT_VERIFIED",
+    //     },
+    //     { status: 403 }
+    //   );
+    // }
 
     let planName: string;
     let price: number;
