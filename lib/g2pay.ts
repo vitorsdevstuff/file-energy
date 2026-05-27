@@ -87,7 +87,11 @@ export async function createCheckoutSession(
   const result = await response.json();
 
   if (!response.ok) {
-    throw new Error(result.error_message || "Failed to create checkout session");
+    console.error("[g2pay] Checkout session failed:", response.status, JSON.stringify(result));
+    throw new Error(
+      result.error_message || result.message || result.error ||
+      `G2Pay API error (HTTP ${response.status}): ${JSON.stringify(result)}`
+    );
   }
 
   return result;
