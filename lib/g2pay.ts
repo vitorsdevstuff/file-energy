@@ -55,7 +55,8 @@ export function generatePaymentHash(
 
 export interface CheckoutRequestData {
   referenceId: string;
-  paymentType: "DEPOSIT";
+  // paymentType: "DEPOSIT";
+  paymentMethod: "BASIC_CARD";
   currency: SupportedCurrency;
   amount: string;
   returnUrl: string;
@@ -114,7 +115,7 @@ export function buildCheckoutRequest(
 
   return {
     referenceId: orderId,
-    paymentType: "DEPOSIT",
+    paymentMethod: "BASIC_CARD",
     currency,
     amount: amount.toFixed(2),
     returnUrl: `${baseUrl}/account/settings/subscription`,
