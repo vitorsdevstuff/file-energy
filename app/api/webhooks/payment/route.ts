@@ -61,6 +61,12 @@ export async function POST(req: NextRequest) {
     // Handle different webhook events from G2Pay
     const { referenceId, state } = body;
 
+
+    const upState = (state ?? "")
+    .toString()
+    .trim()
+    .toUpperCase();
+
     if (!referenceId) {
       return NextResponse.json({ error: "Missing reference ID" }, { status: 400 });
     }
@@ -68,7 +74,7 @@ export async function POST(req: NextRequest) {
     // Extract subscription ID from reference
     const subscriptionId = referenceId.replace("order-", "");
 
-    if (state === "APPROVED" || state === "SUCCESS" || state === "COMPLETED") {
+    if (upState === "APPROVED" || upState === "SUCCESS" || upState === "COMPLETED") {
       const subscription = await prisma.subscription.update({
         where: { id: subscriptionId },
         data: {
@@ -92,7 +98,7 @@ export async function POST(req: NextRequest) {
           gatewaySubscriptionId: transactionId,
         },
       });
-    } else if (state === "DECLINED" || state === "FAILED") {
+    } else if (upState === "DECLINED" || upState === "FAILED") {
       await prisma.subscription.update({
         where: { id: subscriptionId },
         data: {
