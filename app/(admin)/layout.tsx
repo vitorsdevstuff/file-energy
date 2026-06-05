@@ -8,6 +8,7 @@ import {
   FileText,
   Settings,
   BarChart3,
+  Receipt,
   LogOut,
 } from "lucide-react";
 
@@ -30,6 +31,7 @@ export default async function AdminLayout({
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
     { icon: Users, label: "Users", href: "/admin/users" },
     { icon: CreditCard, label: "Subscriptions", href: "/admin/subscriptions" },
+    { icon: Receipt, label: "Transactions", href: "/admin/transactions" },
     { icon: FileText, label: "Plans", href: "/admin/plans" },
     { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
     { icon: Settings, label: "Settings", href: "/admin/settings" },
