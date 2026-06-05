@@ -26,7 +26,7 @@ export default async function AdminTransactionsPage() {
     prisma.plan.findMany({
       where: { softDelete: false },
       orderBy: { price: "asc" },
-      select: { id: true, name: true, price: true, currency: true },
+      select: { id: true, name: true, price: true },
     }),
   ]);
 
@@ -49,6 +49,7 @@ export default async function AdminTransactionsPage() {
     label: p.name,
     subLabel: formatCurrency(p.price, "EUR"),
     price: p.price,
+    currency: "EUR" as const,
   }));
 
   return (
