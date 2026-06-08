@@ -50,6 +50,7 @@ export default async function AdminTransactionsPage() {
     subLabel: formatCurrency(p.price, "EUR"),
     price: p.price,
     currency: "EUR" as const,
+    isCustom: p.name === "Custom Plan",
   }));
 
   return (

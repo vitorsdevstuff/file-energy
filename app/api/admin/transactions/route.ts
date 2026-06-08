@@ -16,6 +16,15 @@ const createTransactionSchema = z.object({
     .datetime({ message: "paidAt must be a valid ISO date" })
     .optional()
     .nullable(),
+  // Custom-plan overrides (mirrors Pricing page)
+  customOverrides: z
+    .object({
+      pdfs: z.number().int().positive(),
+      questions: z.number().int().min(10),
+      pdfSize: z.number().positive(),
+      apiAccess: z.boolean().optional().default(false),
+    })
+    .optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -65,9 +74,11 @@ export async function POST(req: NextRequest) {
           planId: plan.id,
           status: "ACTIVE",
           paymentGateway: data.paymentMethod,
-          pdfs: plan.pdfs,
-          questions: plan.questions,
-          pdfSize: Math.round(plan.pdfSize),
+          pdfs: data.customOverrides?.pdfs ?? plan.pdfs,
+          questions: data.customOverrides?.questions ?? plan.questions,
+          pdfSize: Math.round(
+            data.customOverrides?.pdfSize ?? plan.pdfSize
+          ),
           pdfPages: plan.pdfPages,
           currency: data.currency,
           expiringAt,

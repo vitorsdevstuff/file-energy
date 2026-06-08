@@ -11,6 +11,11 @@ import { cn } from "@/lib/utils";
 import { CURRENCY_INFO } from "@/lib/g2pay";
 import { CurrencySwitcher } from "@/components/shared/CurrencySwitcher";
 import { useCurrency } from "@/lib/currency-context";
+import {
+  calculateCustomPlan,
+  CUSTOM_PLAN_DEFAULTS,
+  type CustomPriorityKey,
+} from "@/lib/custom-plan";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -36,24 +41,15 @@ interface PricingProps {
   showHeader?: boolean;
 }
 
-// Custom Plan pricing rates (in EUR, derived from Test Pack baseline €2.75 / 5 PDFs / 50 questions / 10MB)
-// Distribution: 40% PDFs, 35% questions, 25% size — see customPricingRates in lib/data.ts
-const CUSTOM_RATES = {
-  defaultSizeMB: 10,  // 10 MB/pdf included by default
-  minPDFs: 1,         // minimum 1 PDF
-  minQuestions: 10,   // minimum 10 questions
-  apiMultiplier: 1.1, // +10% for API access
-};
-
-type PriorityKey = "pdfs" | "size" | "questions";
-
 export function Pricing({ showHeader = true }: PricingProps) {
   const { currency } = useCurrency();
   const currencySymbol = CURRENCY_INFO[currency].symbol;
   const [isCustom, setIsCustom] = useState(false);
-  const [customBudget, setCustomBudget] = useState<number | string>(3);
+  const [customBudget, setCustomBudget] = useState<number | string>(
+    CUSTOM_PLAN_DEFAULTS.fallbackBudget
+  );
   const [apiAccess, setApiAccess] = useState(false);
-  const [priorities, setPriorities] = useState<PriorityKey[]>([]);
+  const [priorities, setPriorities] = useState<CustomPriorityKey[]>([]);
   // "balance" = default Test Pack distribution (40/35/25). Switching to any specific
   // priority turns this off; clearing all priorities re-enables it.
   const mode: "balance" | "custom" = priorities.length === 0 ? "balance" : "custom";
@@ -69,7 +65,7 @@ export function Pricing({ showHeader = true }: PricingProps) {
     return priceObj[currency] || priceObj["EUR"];
   };
 
-  const togglePriority = (key: PriorityKey) => {
+  const togglePriority = (key: CustomPriorityKey) => {
     setPriorities((prev) =>
       prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]
     );
@@ -77,64 +73,23 @@ export function Pricing({ showHeader = true }: PricingProps) {
 
   const switchToBalance = () => setPriorities([]);
 
-  // Per-unit rates in selected currency, derived from EUR base rates
-  const rate = currencyConversionRates[currency] || 1;
-  const perPDF = customPricingRates.perPDFBase * rate;
-  const perQuestion = customPricingRates.perQuestionBase * rate;
-  const perMB = customPricingRates.perMBBase * rate;
-
-  // Custom Plan calculations based on user-entered budget + priorities
   const customBudgetNumber = Number(customBudget) || 0;
+  const {
+    pdfs: customPDFs,
+    questions: customQuestions,
+    pdfSize: customSize,
+    perPDF,
+    perQuestion,
+    perMB,
+  } = calculateCustomPlan({
+    budget: customBudgetNumber,
+    currency,
+    priorities,
+    apiAccess,
+  });
 
-  // Convert budget to EUR base, account for API surcharge
-  const budgetEUR = customBudgetNumber / rate;
-  const basePriceEUR = apiAccess
-    ? budgetEUR / CUSTOM_RATES.apiMultiplier
-    : budgetEUR;
-
-  // Budget weights match Test Pack allocation: 40% PDFs, 35% Questions, 25% Size
-  const WEIGHTS: Record<PriorityKey, number> = {
-    pdfs: 0.4,
-    questions: 0.35,
-    size: 0.25,
-  };
-
-  // In "balance" mode, the full 40/35/25 split applies (matches Test Pack exactly).
-  // In "custom" mode, the user picks which resources get a share; unselected
-  // resources fall back to their minimum value.
-  const activeKeys: PriorityKey[] =
+  const activeKeys: CustomPriorityKey[] =
     mode === "balance" ? ["pdfs", "size", "questions"] : priorities;
-
-  const selectedWeightSum = activeKeys.reduce(
-    (sum, key) => sum + WEIGHTS[key],
-    0
-  );
-
-  const shareFor = (key: PriorityKey) =>
-    activeKeys.includes(key)
-      ? basePriceEUR * (WEIGHTS[key] / selectedWeightSum)
-      : 0;
-
-  // PDFs
-  const pdfsBudgetEUR = shareFor("pdfs");
-  const customPDFs = activeKeys.includes("pdfs")
-    ? Math.max(CUSTOM_RATES.minPDFs, Math.floor(pdfsBudgetEUR / customPricingRates.perPDFBase))
-    : CUSTOM_RATES.minPDFs;
-
-  // Document size (10 MB included; extra MB costs €0.06875)
-  const sizeBudgetEUR = shareFor("size");
-  const customSize = activeKeys.includes("size")
-    ? Math.max(
-        CUSTOM_RATES.defaultSizeMB,
-        CUSTOM_RATES.defaultSizeMB + Math.floor(sizeBudgetEUR / customPricingRates.perMBBase)
-      )
-    : CUSTOM_RATES.defaultSizeMB;
-
-  // Questions
-  const questionsBudgetEUR = shareFor("questions");
-  const customQuestions = activeKeys.includes("questions")
-    ? Math.max(CUSTOM_RATES.minQuestions, Math.floor(questionsBudgetEUR / customPricingRates.perQuestionBase))
-    : CUSTOM_RATES.minQuestions;
 
   const calculateTeamPrice = (basePrice: Record<string, number>, planTitle: string) => {
     const userCount = teamUserCounts[planTitle] || 1;
