@@ -338,9 +338,12 @@ export const teamUserMultipliers: Record<number, number> = {
 // Custom pricing base rates (in EUR), derived from Test Pack baseline (€2.75 / 5 PDFs / 50 questions / 10MB)
 // Weight distribution: 40% PDFs, 35% questions, 25% size
 export const customPricingRates = {
-  perPDFBase: 0.22,
-  perQuestionBase: 0.01925,
-  perMBBase: 0.06875,
+  // perPDFBase: 0.22,
+  // perQuestionBase: 0.01925,
+  // perMBBase: 0.06875,
+  perPDFBase: 0.3,
+  perQuestionBase: 0.05,
+  perMBBase: 0.4,
 };
 
 // Currency conversion rates from EUR

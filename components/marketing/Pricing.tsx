@@ -36,14 +36,27 @@ interface PricingProps {
   showHeader?: boolean;
 }
 
+// Custom Plan pricing rates (in EUR, derived from Test Pack baseline €2.75 / 5 PDFs / 50 questions / 10MB)
+// Distribution: 40% PDFs, 35% questions, 25% size — see customPricingRates in lib/data.ts
+const CUSTOM_RATES = {
+  defaultSizeMB: 10,  // 10 MB/pdf included by default
+  minPDFs: 1,         // minimum 1 PDF
+  minQuestions: 10,   // minimum 10 questions
+  apiMultiplier: 1.1, // +10% for API access
+};
+
+type PriorityKey = "pdfs" | "size" | "questions";
+
 export function Pricing({ showHeader = true }: PricingProps) {
   const { currency } = useCurrency();
   const currencySymbol = CURRENCY_INFO[currency].symbol;
   const [isCustom, setIsCustom] = useState(false);
-  const [customPDFs, setCustomPDFs] = useState(5);
-  const [customQuestions, setCustomQuestions] = useState(50);
-  const [customSize, setCustomSize] = useState(10);
+  const [customBudget, setCustomBudget] = useState<number | string>(3);
   const [apiAccess, setApiAccess] = useState(false);
+  const [priorities, setPriorities] = useState<PriorityKey[]>([]);
+  // "balance" = default Test Pack distribution (40/35/25). Switching to any specific
+  // priority turns this off; clearing all priorities re-enables it.
+  const mode: "balance" | "custom" = priorities.length === 0 ? "balance" : "custom";
   const [teamUserCounts, setTeamUserCounts] = useState<Record<string, number>>({
     Basic: 1,
     Intermediate: 1,
@@ -56,82 +69,72 @@ export function Pricing({ showHeader = true }: PricingProps) {
     return priceObj[currency] || priceObj["EUR"];
   };
 
-  // const calculateCustomPrice = () => {
-  //   const rate = currencyConversionRates[currency] || 1;
-
-  //   const pdfPrice = customPDFs * customPricingRates.perPDFBase * rate;
-  //   const questionPrice = customQuestions * customPricingRates.perQuestionBase * rate;
-  //   const sizePrice = customSize * customPricingRates.perMBBase * rate;
-
-  //   let total = pdfPrice + questionPrice + sizePrice;
-  //   if (apiAccess) total *= 1.1;
-
-  //   return total;
-  // };
-
-  const calculateCustomPrice = () => {
-    const plans = pricingData.map((plan) => ({
-      docs: Number(plan.priceList[0].name.match(/\d+/)?.[0]),
-      size: Number(plan.priceList[1].name.match(/\d+/)?.[0]),
-      questions: Number(plan.priceList[2].name.match(/\d+/)?.[0]),
-      price: parseFloat(
-        (plan.priceMonthly as Record<string, string>)[currency] ||
-        (plan.priceMonthly as Record<string, string>)["EUR"]
-      ),
-    }));
-  
-    // между тарифами
-    for (let i = 0; i < plans.length - 1; i++) {
-      const current = plans[i];
-      const next = plans[i + 1];
-  
-      if (
-        customPDFs <= next.docs &&
-        customQuestions <= next.questions &&
-        customSize <= next.size
-      ) {
-        const progressDocs =
-          (customPDFs - current.docs) / (next.docs - current.docs);
-  
-        const progressQuestions =
-          (customQuestions - current.questions) /
-          (next.questions - current.questions);
-  
-        const progressSize =
-          (customSize - current.size) /
-          (next.size - current.size);
-  
-        const progress = Math.max(
-          0,
-          Math.min(
-            1,
-            (progressDocs + progressQuestions + progressSize) / 3
-          )
-        );
-  
-        let total =
-          current.price +
-          (next.price - current.price) * progress;
-  
-        if (apiAccess) total *= 1.1;
-  
-        return total;
-      }
-    }
-  
-    // выше последнего тарифа
-    const last = plans[plans.length - 1];
-  
-    let total =
-      last.price +
-      (customPDFs - last.docs) * 0.5 +
-      (customQuestions - last.questions) * 0.02 +
-      (customSize - last.size) * 0.2;
-  
-    if (apiAccess) total *= 1.1;
-  
-    return total;
+  const togglePriority = (key: PriorityKey) => {
+    setPriorities((prev) =>
+      prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]
+    );
   };
+
+  const switchToBalance = () => setPriorities([]);
+
+  // Per-unit rates in selected currency, derived from EUR base rates
+  const rate = currencyConversionRates[currency] || 1;
+  const perPDF = customPricingRates.perPDFBase * rate;
+  const perQuestion = customPricingRates.perQuestionBase * rate;
+  const perMB = customPricingRates.perMBBase * rate;
+
+  // Custom Plan calculations based on user-entered budget + priorities
+  const customBudgetNumber = Number(customBudget) || 0;
+
+  // Convert budget to EUR base, account for API surcharge
+  const budgetEUR = customBudgetNumber / rate;
+  const basePriceEUR = apiAccess
+    ? budgetEUR / CUSTOM_RATES.apiMultiplier
+    : budgetEUR;
+
+  // Budget weights match Test Pack allocation: 40% PDFs, 35% Questions, 25% Size
+  const WEIGHTS: Record<PriorityKey, number> = {
+    pdfs: 0.4,
+    questions: 0.35,
+    size: 0.25,
+  };
+
+  // In "balance" mode, the full 40/35/25 split applies (matches Test Pack exactly).
+  // In "custom" mode, the user picks which resources get a share; unselected
+  // resources fall back to their minimum value.
+  const activeKeys: PriorityKey[] =
+    mode === "balance" ? ["pdfs", "size", "questions"] : priorities;
+
+  const selectedWeightSum = activeKeys.reduce(
+    (sum, key) => sum + WEIGHTS[key],
+    0
+  );
+
+  const shareFor = (key: PriorityKey) =>
+    activeKeys.includes(key)
+      ? basePriceEUR * (WEIGHTS[key] / selectedWeightSum)
+      : 0;
+
+  // PDFs
+  const pdfsBudgetEUR = shareFor("pdfs");
+  const customPDFs = activeKeys.includes("pdfs")
+    ? Math.max(CUSTOM_RATES.minPDFs, Math.floor(pdfsBudgetEUR / customPricingRates.perPDFBase))
+    : CUSTOM_RATES.minPDFs;
+
+  // Document size (10 MB included; extra MB costs €0.06875)
+  const sizeBudgetEUR = shareFor("size");
+  const customSize = activeKeys.includes("size")
+    ? Math.max(
+        CUSTOM_RATES.defaultSizeMB,
+        CUSTOM_RATES.defaultSizeMB + Math.floor(sizeBudgetEUR / customPricingRates.perMBBase)
+      )
+    : CUSTOM_RATES.defaultSizeMB;
+
+  // Questions
+  const questionsBudgetEUR = shareFor("questions");
+  const customQuestions = activeKeys.includes("questions")
+    ? Math.max(CUSTOM_RATES.minQuestions, Math.floor(questionsBudgetEUR / customPricingRates.perQuestionBase))
+    : CUSTOM_RATES.minQuestions;
 
   const calculateTeamPrice = (basePrice: Record<string, number>, planTitle: string) => {
     const userCount = teamUserCounts[planTitle] || 1;
@@ -239,56 +242,209 @@ export function Pricing({ showHeader = true }: PricingProps) {
               <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
                 Custom Plan
               </h3>
-              <div className="mb-6 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                  {currencySymbol}{calculateCustomPrice().toFixed(2)}
-                </span>
-              </div>
+              <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
+                Set your budget — we'll show you what you get
+              </p>
 
-              {/* PDF Slider */}
+              {/* Budget Input */}
               <div className="mb-6">
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {customPDFs} PDFs
+                  Your budget
                 </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="300"
-                  value={customPDFs}
-                  onChange={(e) => setCustomPDFs(Number(e.target.value))}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-primary dark:bg-gray-700"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                    {currencySymbol}
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={customBudget}
+                    onChange={(e) => setCustomBudget(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-8 pr-3 text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    placeholder="5"
+                  />
+                </div>
               </div>
 
-              {/* Questions Slider */}
+              {/* Priorities */}
               <div className="mb-6">
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {customQuestions} Questions
+                  What matters most to you?
                 </label>
-                <input
-                  type="range"
-                  min="50"
-                  max="3000"
-                  step="10"
-                  value={customQuestions}
-                  onChange={(e) => setCustomQuestions(Number(e.target.value))}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-primary dark:bg-gray-700"
-                />
+                <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">Balance</span> uses the standard 40 / 35 / 25 split (matches Test Pack). Pick specific options to override it.
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {/* Balance — radio-style, default selected */}
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors",
+                      mode === "balance"
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 bg-white hover:border-primary/50 dark:border-gray-700 dark:bg-gray-800"
+                    )}
+                    onClick={(e) => {
+                      // Prevent default checkbox/radio behavior — we handle state manually
+                      e.preventDefault();
+                      switchToBalance();
+                    }}
+                  >
+                    <div
+                      className={cn(
+                        "flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2",
+                        mode === "balance"
+                          ? "border-primary"
+                          : "border-gray-300 dark:border-gray-600"
+                      )}
+                    >
+                      {mode === "balance" && (
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          Balance
+                        </span>
+                        {mode === "balance" && (
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase text-primary">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        40% PDFs · 35% Questions · 25% Size
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Specific priorities — multi-select */}
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors",
+                      priorities.includes("pdfs")
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 bg-white hover:border-primary/50 dark:border-gray-700 dark:bg-gray-800"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={priorities.includes("pdfs")}
+                      onChange={() => togglePriority("pdfs")}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        PDFs (more documents)
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {currencySymbol}{perPDF.toFixed(2)} per extra PDF
+                      </p>
+                    </div>
+                  </label>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors",
+                      priorities.includes("size")
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 bg-white hover:border-primary/50 dark:border-gray-700 dark:bg-gray-800"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={priorities.includes("size")}
+                      onChange={() => togglePriority("size")}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        Document size (bigger files)
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        10 MB included · {currencySymbol}{perMB.toFixed(2)} per extra MB
+                      </p>
+                    </div>
+                  </label>
+                  <label
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors",
+                      priorities.includes("questions")
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-200 bg-white hover:border-primary/50 dark:border-gray-700 dark:bg-gray-800"
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={priorities.includes("questions")}
+                      onChange={() => togglePriority("questions")}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        Questions (more queries)
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        10 included · {currencySymbol}{perQuestion.toFixed(2)} per extra question
+                      </p>
+                    </div>
+                  </label>
+                </div>
               </div>
 
-              {/* Size Slider */}
-              <div className="mb-6">
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {customSize} MB/pdf
-                </label>
-                <input
-                  type="range"
-                  min="10"
-                  max="100"
-                  value={customSize}
-                  onChange={(e) => setCustomSize(Number(e.target.value))}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-primary dark:bg-gray-700"
-                />
+              {/* Info Block: what the user gets */}
+              <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <h4 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+                  You'll get:
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                  <li className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      PDFs
+                      {activeKeys.includes("pdfs") && (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase text-primary">
+                          {mode === "balance" ? "Included" : "Priority"}
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {customPDFs} {customPDFs === 1 ? 'document' : 'documents'}
+                    </span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      Document size
+                      {activeKeys.includes("size") && (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase text-primary">
+                          {mode === "balance" ? "Included" : "Priority"}
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {customSize} MB/pdf
+                    </span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      Questions
+                      {activeKeys.includes("questions") && (
+                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase text-primary">
+                          {mode === "balance" ? "Included" : "Priority"}
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {customQuestions} questions
+                    </span>
+                  </li>
+                </ul>
+                <div className="mt-3 border-t border-primary/20 pt-3 text-xs text-gray-600 dark:text-gray-400">
+                  {mode === "balance" ? (
+                    <p>Standard 40 / 35 / 25 split — matches the Test Pack.</p>
+                  ) : (
+                    <p>Selected priorities get their share, scaled to the chosen subset.</p>
+                  )}
+                </div>
               </div>
 
               {/* API Access Checkbox */}
@@ -306,8 +462,12 @@ export function Pricing({ showHeader = true }: PricingProps) {
                 </label>
               </div>
 
-              <Link href={`/checkout?custom=true&price=${calculateCustomPrice().toFixed(2)}&pdfs=${customPDFs}&questions=${customQuestions}&size=${customSize}&api=${apiAccess}&currency=${currency}`}>
-                <Button className="w-full">Get Started</Button>
+              <Link
+                href={`/checkout?custom=true&price=${customBudgetNumber.toFixed(2)}&pdfs=${customPDFs}&questions=${customQuestions}&size=${customSize}&api=${apiAccess}&currency=${currency}`}
+              >
+                <Button className="w-full" disabled={customBudgetNumber <= 0}>
+                  Get Started
+                </Button>
               </Link>
             </div>
           </motion.div>
