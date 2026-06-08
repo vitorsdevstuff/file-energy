@@ -23,6 +23,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
   const [paymentMethod, setPaymentMethod] = React.useState("manual");
   const [note, setNote] = React.useState("");
   const [cancelExisting, setCancelExisting] = React.useState(true);
+  const [paidAt, setPaidAt] = React.useState<string>("");
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
@@ -63,6 +64,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
           paymentMethod,
           note: note || null,
           cancelExisting,
+          paidAt: paidAt ? new Date(paidAt).toISOString() : null,
         }),
       });
       const json = await res.json();
@@ -74,6 +76,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
       setPlanId("");
       setAmount("");
       setNote("");
+      setPaidAt("");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -205,6 +208,31 @@ export function CreateTransactionForm({ users, plans }: Props) {
             onChange={(e) => setNote(e.target.value)}
           />
         </div>
+      </div>
+
+      <div className="mt-4">
+        <label className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span>Paid at (optional)</span>
+          {paidAt && (
+            <button
+              type="button"
+              onClick={() => setPaidAt("")}
+              className="text-xs font-normal text-primary hover:underline"
+            >
+              Reset to now
+            </button>
+          )}
+        </label>
+        <input
+          type="datetime-local"
+          value={paidAt}
+          onChange={(e) => setPaidAt(e.target.value)}
+          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900"
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          Leave empty to use the current time. Setting a past date will also
+          backdate the subscription&apos;s expiry to one year from that date.
+        </p>
       </div>
 
       <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">

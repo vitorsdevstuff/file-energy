@@ -11,6 +11,11 @@ const createTransactionSchema = z.object({
   paymentMethod: z.string().min(1).default("manual"),
   note: z.string().optional().nullable(),
   cancelExisting: z.boolean().optional().default(false),
+  paidAt: z
+    .string()
+    .datetime({ message: "paidAt must be a valid ISO date" })
+    .optional()
+    .nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -48,7 +53,9 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const expiringAt = new Date();
+      const paidAt = data.paidAt ? new Date(data.paidAt) : new Date();
+
+      const expiringAt = new Date(paidAt);
       expiringAt.setFullYear(expiringAt.getFullYear() + 1);
       expiringAt.setDate(expiringAt.getDate() - 1);
 
@@ -64,6 +71,7 @@ export async function POST(req: NextRequest) {
           pdfPages: plan.pdfPages,
           currency: data.currency,
           expiringAt,
+          createdAt: paidAt,
         },
       });
 
@@ -74,9 +82,10 @@ export async function POST(req: NextRequest) {
           status: "PAID",
           amount: data.amount,
           currency: data.currency,
-          paidAt: new Date(),
+          paidAt,
           paymentGateway: data.paymentMethod,
           gatewaySubscriptionId: `manual-${subscription.id}`,
+          createdAt: paidAt,
         },
       });
 
