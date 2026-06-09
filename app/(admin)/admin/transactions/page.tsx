@@ -136,8 +136,7 @@ export default async function AdminTransactionsPage() {
                 <span className="font-medium text-gray-900 dark:text-white">
                   3.
                 </span>{" "}
-                The user&apos;s previous ACTIVE subscription is cancelled by
-                default.
+                By default the new plan is merged into the current ACTIVE subscription
               </li>
             </ul>
           </div>

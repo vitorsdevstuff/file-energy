@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { mergeOrCreateSubscription } from "@/lib/subscription";
 import { z } from "zod";
 
 const createTransactionSchema = z.object({
@@ -55,36 +56,60 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      const paidAt = data.paidAt ? new Date(data.paidAt) : new Date();
+
+      // Resolve final plan values once (custom-plan overrides win over plan defaults).
+      const finalPdfs = data.customOverrides?.pdfs ?? plan.pdfs;
+      const finalQuestions = data.customOverrides?.questions ?? plan.questions;
+      const finalPdfSize = data.customOverrides?.pdfSize ?? plan.pdfSize;
+
+      let subscription;
+
       if (data.cancelExisting) {
+        // Explicit replacement: cancel any active sub first, then create
+        // a brand-new one with the new plan's resources. Usage counters
+        // (pdfs/questions remaining) reset in this branch by design.
         await tx.subscription.updateMany({
           where: { userId: user.id, status: "ACTIVE" },
           data: { status: "CANCELLED", updatedAt: new Date() },
         });
-      }
 
-      const paidAt = data.paidAt ? new Date(data.paidAt) : new Date();
+        const expiringAt = new Date(paidAt);
+        expiringAt.setFullYear(expiringAt.getFullYear() + 1);
+        expiringAt.setDate(expiringAt.getDate() - 1);
 
-      const expiringAt = new Date(paidAt);
-      expiringAt.setFullYear(expiringAt.getFullYear() + 1);
-      expiringAt.setDate(expiringAt.getDate() - 1);
-
-      const subscription = await tx.subscription.create({
-        data: {
+        subscription = await tx.subscription.create({
+          data: {
+            userId: user.id,
+            planId: plan.id,
+            status: "ACTIVE",
+            paymentGateway: data.paymentMethod,
+            pdfs: finalPdfs,
+            questions: finalQuestions,
+            pdfSize: Math.round(finalPdfSize),
+            pdfPages: plan.pdfPages,
+            currency: data.currency,
+            expiringAt,
+            createdAt: paidAt,
+          },
+        });
+      } else {
+        // Default: merge into the existing ACTIVE subscription so the
+        // user keeps their remaining resources and paid time. See
+        // lib/subscription.ts for the full semantics.
+        subscription = await mergeOrCreateSubscription({
           userId: user.id,
           planId: plan.id,
-          status: "ACTIVE",
-          paymentGateway: data.paymentMethod,
-          pdfs: data.customOverrides?.pdfs ?? plan.pdfs,
-          questions: data.customOverrides?.questions ?? plan.questions,
-          pdfSize: Math.round(
-            data.customOverrides?.pdfSize ?? plan.pdfSize
-          ),
+          pdfs: finalPdfs,
+          questions: finalQuestions,
+          pdfSize: finalPdfSize,
           pdfPages: plan.pdfPages,
           currency: data.currency,
-          expiringAt,
-          createdAt: paidAt,
-        },
-      });
+          paymentGateway: data.paymentMethod,
+          paidAt,
+          tx,
+        });
+      }
 
       const invoice = await tx.invoice.create({
         data: {

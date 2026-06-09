@@ -230,7 +230,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
   const [currency, setCurrency] = React.useState("EUR");
   const [paymentMethod, setPaymentMethod] = React.useState("manual");
   const [note, setNote] = React.useState("");
-  const [cancelExisting, setCancelExisting] = React.useState(true);
+  const [cancelExisting, setCancelExisting] = React.useState(false);
   const [paidAt, setPaidAt] = React.useState<string>("");
   // Custom plan: admin enters a budget, resources are derived (same as Pricing page)
   const [apiAccess, setApiAccess] = React.useState(false);
@@ -632,14 +632,24 @@ export function CreateTransactionForm({ users, plans }: Props) {
         </p>
       </div>
 
-      <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+      <label className="mt-4 flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
         <input
           type="checkbox"
           checked={cancelExisting}
           onChange={(e) => setCancelExisting(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
         />
-        Cancel user&apos;s existing ACTIVE subscription
+        <span>
+          <span className="font-medium text-gray-900 dark:text-white">
+            Replace existing subscription
+          </span>
+          <span className="block text-xs text-gray-500 dark:text-gray-400">
+            Off by default — when off, the new plan is merged into the
+            current ACTIVE subscription (remaining PDFs and questions
+            are summed, expiry is extended). Turn on to discard the old
+            subscription and start fresh.
+          </span>
+        </span>
       </label>
 
       {error && (

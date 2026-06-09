@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { mergeOrCreateSubscription } from "@/lib/subscription";
 
 export async function GET(req: NextRequest) {
   try {
@@ -75,14 +76,43 @@ export async function POST(req: NextRequest) {
     const subscriptionId = referenceId.replace("order-", "");
 
     if (upState === "APPROVED" || upState === "SUCCESS" || upState === "COMPLETED") {
-      const subscription = await prisma.subscription.update({
+      // Read the PENDING subscription that checkout created. We need its
+      // plan + currency + the new plan's resources (pdfs/questions/...) so
+      // we can merge them with whatever the user already has.
+      const pending = await prisma.subscription.findUnique({
         where: { id: subscriptionId },
-        data: {
-          status: "ACTIVE",
-          gatewaySubscriptionId: transactionId,
-          updatedAt: new Date(),
-        },
         include: { plan: true },
+      });
+
+      if (!pending) {
+        console.error("Webhook: subscription not found:", subscriptionId);
+        return NextResponse.json(
+          { error: "Subscription not found" },
+          { status: 404 }
+        );
+      }
+
+      // Mark the PENDING row as CANCELLED so it doesn't linger — the
+      // mergeOrCreateSubscription helper will create a fresh merged row
+      // (or update the user's existing ACTIVE one) inside a transaction.
+      await prisma.subscription.update({
+        where: { id: pending.id },
+        data: { status: "CANCELLED", updatedAt: new Date() },
+      });
+
+      const paidAt = new Date();
+
+      const subscription = await mergeOrCreateSubscription({
+        userId: pending.userId,
+        planId: pending.planId,
+        pdfs: pending.pdfs,
+        questions: pending.questions,
+        pdfSize: pending.pdfSize,
+        pdfPages: pending.pdfPages,
+        currency: pending.currency,
+        paymentGateway: "g2pay",
+        paidAt,
+        gatewaySubscriptionId: transactionId,
       });
 
       // Create invoice
@@ -91,9 +121,9 @@ export async function POST(req: NextRequest) {
           userId: subscription.userId,
           planId: subscription.planId,
           status: "PAID",
-          amount: subscription.plan.price,
+          amount: pending.plan.price,
           currency: subscription.currency,
-          paidAt: new Date(),
+          paidAt,
           paymentGateway: "g2pay",
           gatewaySubscriptionId: transactionId,
         },

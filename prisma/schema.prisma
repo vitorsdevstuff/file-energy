@@ -224,6 +224,7 @@ enum SubscriptionStatus {
   ACTIVE
   CANCELLED
   EXPIRED
+  SUPERSEDED
 }
 
 enum InvoiceStatus {
