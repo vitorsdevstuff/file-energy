@@ -378,7 +378,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
           <select
             value={planId}
             onChange={(e) => setPlanId(e.target.value)}
-            className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900"
+            className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
           >
             <option value="">Select a plan…</option>
             {plans.map((p) => (
@@ -564,7 +564,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-            className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900"
+            className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
           >
             {["EUR", "USD", "GBP", "AUD", "NZD", "CHF", "PLN", "CZK", "HUF", "AED"].map(
               (c) => (
@@ -583,7 +583,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
           <select
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
-            className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900"
+            className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
           >
             <option value="manual">Manual</option>
             <option value="bank-transfer">Bank transfer</option>
@@ -624,7 +624,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
           type="datetime-local"
           value={paidAt}
           onChange={(e) => setPaidAt(e.target.value)}
-          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900"
+          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
         />
         <p className="mt-1 text-xs text-gray-500">
           Leave empty to use the current time. Setting a past date will also
