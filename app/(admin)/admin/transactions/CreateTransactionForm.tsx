@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Receipt, Loader2, Sparkles } from "lucide-react";
+import { Receipt, Loader2, Sparkles, Search, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
@@ -25,6 +25,202 @@ type Props = {
   users: Option[];
   plans: Option[];
 };
+
+function UserSearchSelect({
+  users,
+  value,
+  onChange,
+}: {
+  users: Option[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [query, setQuery] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const listRef = React.useRef<HTMLUListElement>(null);
+
+  const selected = users.find((u) => u.id === value);
+
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      (u) =>
+        u.label.toLowerCase().includes(q) ||
+        (u.subLabel?.toLowerCase().includes(q) ?? false)
+    );
+  }, [users, query]);
+
+  // Close on outside click
+  React.useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Reset highlight when list shrinks/changes
+  React.useEffect(() => {
+    setActiveIndex(0);
+  }, [query, open]);
+
+  // Scroll active item into view
+  React.useEffect(() => {
+    if (!open || !listRef.current) return;
+    const item = listRef.current.querySelector<HTMLElement>(
+      `[data-index="${activeIndex}"]`
+    );
+    item?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, open]);
+
+  const pick = (id: string) => {
+    onChange(id);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const clear = () => {
+    onChange("");
+    setQuery("");
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div
+        className={`flex h-11 w-full items-center gap-2 rounded-lg border bg-white px-3 text-sm transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 dark:bg-gray-900 ${
+          open
+            ? "border-primary ring-2 ring-primary/20"
+            : "border-gray-200 dark:border-gray-700"
+        }`}
+        onClick={() => inputRef.current?.focus()}
+      >
+        <Search className="h-4 w-4 flex-shrink-0 text-gray-400" />
+        {selected && !open ? (
+          <button
+            type="button"
+            className="flex flex-1 items-center justify-between text-left"
+            onClick={() => {
+              setOpen(true);
+              // small delay so the click that closed it doesn't immediately
+              // re-focus and re-open via the wrapper click above
+              requestAnimationFrame(() => inputRef.current?.focus());
+            }}
+          >
+            <span className="flex flex-col truncate">
+              <span className="truncate font-medium text-gray-900 dark:text-white">
+                {selected.label}
+              </span>
+              <span className="truncate text-xs text-gray-500 dark:text-gray-400">
+                {selected.subLabel}
+              </span>
+            </span>
+          </button>
+        ) : (
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            placeholder="Search users…"
+            className="h-full flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none dark:text-white dark:placeholder:text-gray-500"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setOpen(true);
+                setActiveIndex((i) =>
+                  Math.min(i + 1, Math.max(filtered.length - 1, 0))
+                );
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setActiveIndex((i) => Math.max(i - 1, 0));
+              } else if (e.key === "Enter") {
+                if (filtered[activeIndex]) {
+                  e.preventDefault();
+                  pick(filtered[activeIndex].id);
+                }
+              } else if (e.key === "Escape") {
+                setOpen(false);
+              }
+            }}
+          />
+        )}
+        {selected ? (
+          <button
+            type="button"
+            aria-label="Clear selection"
+            onClick={clear}
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <ChevronDown
+            className={`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        )}
+      </div>
+
+      {open && (
+        <ul
+          ref={listRef}
+          role="listbox"
+          className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900"
+        >
+          {filtered.length === 0 ? (
+            <li className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              No users match &quot;{query}&quot;
+            </li>
+          ) : (
+            filtered.map((u, i) => {
+              const isSelected = u.id === value;
+              const isActive = i === activeIndex;
+              return (
+                <li
+                  key={u.id}
+                  data-index={i}
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseEnter={() => setActiveIndex(i)}
+                  onMouseDown={(e) => {
+                    // mousedown so we don't lose the click to the input blur
+                    e.preventDefault();
+                    pick(u.id);
+                  }}
+                  className={`flex cursor-pointer flex-col gap-0.5 px-3 py-2 ${
+                    isActive ? "bg-primary/10" : ""
+                  } ${isSelected ? "font-medium" : ""}`}
+                >
+                  <span className="truncate text-sm text-gray-900 dark:text-white">
+                    {u.label}
+                  </span>
+                  <span className="truncate text-xs text-gray-500 dark:text-gray-400">
+                    {u.subLabel}
+                  </span>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function CreateTransactionForm({ users, plans }: Props) {
   const router = useRouter();
@@ -168,18 +364,11 @@ export function CreateTransactionForm({ users, plans }: Props) {
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
             User
           </label>
-          <select
+          <UserSearchSelect
+            users={users}
             value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900"
-          >
-            <option value="">Select a user…</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.label} — {u.subLabel}
-              </option>
-            ))}
-          </select>
+            onChange={setUserId}
+          />
         </div>
 
         <div>
