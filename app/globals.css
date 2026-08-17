@@ -69,6 +69,45 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Native date/time inputs ship with a calendar icon whose color is set by
+   the browser's color-scheme, not by Tailwind's `dark:` variant. In dark
+   mode the icon stays black on a dark background and becomes invisible.
+   We use three layered fixes because each one has edge cases:
+
+   1. color-scheme: dark on the input AND any <dialog> wrapper — Chromium
+      computes the input's color-scheme from its closest <dialog>/modal
+      ancestor, so the rule has to land on both to win against the host.
+   2. !important on color-scheme — defends against UA overrides.
+   3. invert on the ::-webkit-calendar-picker-indicator pseudo-element —
+      for browsers that ignore color-scheme for the icon. Lightning CSS
+      (Tailwind v4's bundler) mangles plain `invert(1)` and `invert(100%)`
+      to a no-op, so we hide the value behind a CSS variable — the
+      minimiser can't pattern-match across a var() reference.
+   The site enables dark mode through `prefers-color-scheme`, not
+   through a `dark` class, so we key off the same media query. */
+@media (prefers-color-scheme: dark) {
+  dialog,
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"] {
+    color-scheme: dark !important;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+  input[type="month"]::-webkit-calendar-picker-indicator,
+  input[type="week"]::-webkit-calendar-picker-indicator {
+    /* CSS variable is the only thing that survives Lightning CSS's
+       "simplify invert" optimisation, which strips the 1 from
+       invert(1)/invert(100%) and leaves a no-op invert(). */
+    --cal-invert: invert(1);
+    filter: var(--cal-invert) opacity(0.7);
+    cursor: pointer;
+  }
+}
+
 /* Container */
 .container {
   width: 100%;

@@ -36,11 +36,11 @@ const presetPlans: Record<string, {
   pdfPages: number;
   prices: Record<string, number>
 }> = {
-  "1": { name: "Test", pdfs: 5, questions: 50, pdfSize: 10, pdfPages: 50, prices: { EUR: 2.75, USD: 2.99, GBP: 2.36, AUD: 4.59, NZD: 5.09, CHF: 2.64, PLN: 12.20, CZK: 72.45, HUF: 1188, AED: 10.98 } },
-  "2": { name: "Basic", pdfs: 10, questions: 150, pdfSize: 15, pdfPages: 100, prices: { EUR: 7.99, USD: 8.70, GBP: 6.86, AUD: 13.33, NZD: 14.81, CHF: 7.67, PLN: 35.50, CZK: 210.80, HUF: 3459, AED: 31.96 } },
-  "3": { name: "Intermediate", pdfs: 20, questions: 250, pdfSize: 20, pdfPages: 150, prices: { EUR: 19.99, USD: 21.77, GBP: 17.15, AUD: 33.34, NZD: 37.03, CHF: 19.19, PLN: 88.76, CZK: 526.99, HUF: 8646, AED: 79.90 } },
-  "4": { name: "Advanced", pdfs: 40, questions: 400, pdfSize: 35, pdfPages: 200, prices: { EUR: 34.99, USD: 38.11, GBP: 30.01, AUD: 58.36, NZD: 64.80, CHF: 33.59, PLN: 155.33, CZK: 922.23, HUF: 15131, AED: 139.82 } },
-  "5": { name: "Professional", pdfs: 70, questions: 700, pdfSize: 50, pdfPages: 300, prices: { EUR: 59.99, USD: 65.35, GBP: 51.45, AUD: 100.12, NZD: 111.19, CHF: 57.59, PLN: 266.43, CZK: 1582.42, HUF: 25962, AED: 239.94 } },
+  "1": { name: "Test", pdfs: 5, questions: 50, pdfSize: 10, pdfPages: 50, prices: { EUR: 2.75, USD: 2.99, GBP: 2.36, AUD: 4.59, NZD: 5.09, CAD: 4.43, CHF: 2.64, PLN: 12.20, CZK: 72.45, HUF: 1188, AED: 10.98 } },
+  "2": { name: "Basic", pdfs: 10, questions: 150, pdfSize: 15, pdfPages: 100, prices: { EUR: 7.99, USD: 8.70, GBP: 6.86, AUD: 13.33, NZD: 14.81, CAD: 12.86, CHF: 7.67, PLN: 35.50, CZK: 210.80, HUF: 3459, AED: 31.96 } },
+  "3": { name: "Intermediate", pdfs: 20, questions: 250, pdfSize: 20, pdfPages: 150, prices: { EUR: 19.99, USD: 21.77, GBP: 17.15, AUD: 33.34, NZD: 37.03, CAD: 32.18, CHF: 19.19, PLN: 88.76, CZK: 526.99, HUF: 8646, AED: 79.90 } },
+  "4": { name: "Advanced", pdfs: 40, questions: 400, pdfSize: 35, pdfPages: 200, prices: { EUR: 34.99, USD: 38.11, GBP: 30.01, AUD: 58.36, NZD: 64.80, CAD: 56.33, CHF: 33.59, PLN: 155.33, CZK: 922.23, HUF: 15131, AED: 139.82 } },
+  "5": { name: "Professional", pdfs: 70, questions: 700, pdfSize: 50, pdfPages: 300, prices: { EUR: 59.99, USD: 65.35, GBP: 51.45, AUD: 100.12, NZD: 111.19, CAD: 96.58, CHF: 57.59, PLN: 266.43, CZK: 1582.42, HUF: 25962, AED: 239.94 } },
 };
 
 export async function POST(req: NextRequest) {

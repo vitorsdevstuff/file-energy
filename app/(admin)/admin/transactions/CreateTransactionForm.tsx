@@ -566,7 +566,7 @@ export function CreateTransactionForm({ users, plans }: Props) {
             onChange={(e) => setCurrency(e.target.value)}
             className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
           >
-            {["EUR", "USD", "GBP", "AUD", "NZD", "CHF", "PLN", "CZK", "HUF", "AED"].map(
+            {["EUR", "USD", "GBP", "AUD", "NZD", "CAD", "CHF", "PLN", "CZK", "HUF", "AED"].map(
               (c) => (
                 <option key={c} value={c}>
                   {c}
